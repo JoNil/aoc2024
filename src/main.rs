@@ -1,11 +1,12 @@
 use std::time::Instant;
 
-use aoc2022::day02;
+use aoc2022::day03 as day;
 
 fn main() {
     let start = Instant::now();
-    assert!(day02::b(day02::INPUT) == 296);
+    let val = day::b(day::INPUT);
     let elapsed = start.elapsed();
 
+    println!("{}", val);
     println!("{}", elapsed.as_micros());
 }
