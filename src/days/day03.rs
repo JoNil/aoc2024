@@ -130,7 +130,7 @@ impl<'a> Parse<'a> {
             && self.input[self.current + 2] == b'('
             && self.input[self.current + 3] == b')'
         {
-            self.current += 3;
+            self.current += 4;
             return Some(());
         }
 
@@ -138,7 +138,7 @@ impl<'a> Parse<'a> {
     }
 
     fn do_not_op(&mut self) -> Option<()> {
-        if self.current + 5 >= self.input.len() {
+        if self.current + 6 >= self.input.len() {
             return None;
         }
 
@@ -150,7 +150,7 @@ impl<'a> Parse<'a> {
             && self.input[self.current + 5] == b'('
             && self.input[self.current + 6] == b')'
         {
-            self.current += 3;
+            self.current += 7;
             return Some(());
         }
 
