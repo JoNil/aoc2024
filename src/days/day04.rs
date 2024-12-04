@@ -79,11 +79,54 @@ fn test_a() {
 }
 
 pub fn b(input: &str) -> i32 {
-    0
+    let mut map = Map {
+        data: Vec::new(),
+        stride: 0,
+    };
+
+    let mut lines: i32 = 0;
+
+    for line in input.lines() {
+        map.stride = line.len() as i32;
+        lines += 1;
+
+        for char in line.bytes() {
+            map.data.push(char);
+        }
+    }
+
+    let mut count = 0;
+
+    for y in 0..lines {
+        for x in 0..map.stride {
+            let c1 = [(0, 2), (1, 1), (2, 0)];
+            let c2 = [(0, 0), (1, 1), (2, 2)];
+
+            let candidate_1 = [
+                map.get(x + c1[0].0, y + c1[0].1),
+                map.get(x + c1[1].0, y + c1[1].1),
+                map.get(x + c1[2].0, y + c1[2].1),
+            ];
+
+            let candidate_2 = [
+                map.get(x + c2[0].0, y + c2[0].1),
+                map.get(x + c2[1].0, y + c2[1].1),
+                map.get(x + c2[2].0, y + c2[2].1),
+            ];
+
+            if (&candidate_1[..] == b"MAS" || &candidate_1[..] == b"SAM")
+                && (&candidate_2[..] == b"MAS" || &candidate_2[..] == b"SAM")
+            {
+                count += 1;
+            }
+        }
+    }
+
+    count
 }
 
 #[test]
 fn test_b() {
-    assert_eq!(b(TEST_INPUT), 0);
-    assert_eq!(b(INPUT), 0);
+    assert_eq!(b(TEST_INPUT), 9);
+    assert_eq!(b(INPUT), 1933);
 }
