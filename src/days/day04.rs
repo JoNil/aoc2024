@@ -1,12 +1,12 @@
 pub static INPUT: &str = include_str!("../input/4.txt");
 pub static TEST_INPUT: &str = include_str!("../input/4_test.txt");
 
-struct Map {
-    data: Vec<u8>,
+struct Map<'a> {
+    data: &'a [u8],
     stride: i32,
 }
 
-impl Map {
+impl<'a> Map<'a> {
     fn get(&self, x: i32, y: i32) -> u8 {
         let index = x + y * self.stride;
 
@@ -28,42 +28,62 @@ impl Map {
 
 pub fn a(input: &str) -> i32 {
     let mut map = Map {
-        data: Vec::new(),
+        data: input.as_bytes(),
         stride: 0,
     };
 
     let mut lines: i32 = 0;
 
     for line in input.lines() {
-        map.stride = line.len() as i32;
+        map.stride = line.len() as i32 + 1;
         lines += 1;
-
-        for char in line.bytes() {
-            map.data.push(char);
-        }
     }
 
     let mut count = 0;
 
     for y in 0..lines {
         for x in 0..map.stride {
-            let candiadtes_coords: [[(i32, i32); 4]; 4] = [
-                [(0, 0), (0, 1), (0, 2), (0, 3)],
-                [(0, 0), (1, 0), (2, 0), (3, 0)],
-                [(0, 0), (1, -1), (2, -2), (3, -3)],
-                [(0, 0), (1, 1), (2, 2), (3, 3)],
-            ];
+            let first = map.get(x, y);
 
-            for coords in candiadtes_coords {
-                let candidate = [
-                    map.get(x + coords[0].0, y + coords[0].1),
-                    map.get(x + coords[1].0, y + coords[1].1),
-                    map.get(x + coords[2].0, y + coords[2].1),
-                    map.get(x + coords[3].0, y + coords[3].1),
+            if first == b'X' {
+                let candiadtes_coords: [[(i32, i32); 3]; 4] = [
+                    [(0, 1), (0, 2), (0, 3)],
+                    [(1, 0), (2, 0), (3, 0)],
+                    [(1, -1), (2, -2), (3, -3)],
+                    [(1, 1), (2, 2), (3, 3)],
                 ];
 
-                if &candidate[..] == b"XMAS" || &candidate[..] == b"SAMX" {
-                    count += 1;
+                for coords in candiadtes_coords {
+                    let candidate = [
+                        map.get(x + coords[0].0, y + coords[0].1),
+                        map.get(x + coords[1].0, y + coords[1].1),
+                        map.get(x + coords[2].0, y + coords[2].1),
+                    ];
+
+                    if &candidate[..] == b"MAS" {
+                        count += 1;
+                    }
+                }
+            }
+
+            if first == b'S' {
+                let candiadtes_coords: [[(i32, i32); 3]; 4] = [
+                    [(0, 1), (0, 2), (0, 3)],
+                    [(1, 0), (2, 0), (3, 0)],
+                    [(1, -1), (2, -2), (3, -3)],
+                    [(1, 1), (2, 2), (3, 3)],
+                ];
+
+                for coords in candiadtes_coords {
+                    let candidate = [
+                        map.get(x + coords[0].0, y + coords[0].1),
+                        map.get(x + coords[1].0, y + coords[1].1),
+                        map.get(x + coords[2].0, y + coords[2].1),
+                    ];
+
+                    if &candidate[..] == b"AMX" {
+                        count += 1;
+                    }
                 }
             }
         }
@@ -80,19 +100,15 @@ fn test_a() {
 
 pub fn b(input: &str) -> i32 {
     let mut map = Map {
-        data: Vec::new(),
+        data: input.as_bytes(),
         stride: 0,
     };
 
     let mut lines: i32 = 0;
 
     for line in input.lines() {
-        map.stride = line.len() as i32;
+        map.stride = line.len() as i32 + 1;
         lines += 1;
-
-        for char in line.bytes() {
-            map.data.push(char);
-        }
     }
 
     let mut count = 0;
