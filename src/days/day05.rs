@@ -1,4 +1,5 @@
-use std::{cmp::Ordering, collections::HashSet};
+use bit_vec::BitVec;
+use std::cmp::Ordering;
 
 pub static INPUT: &str = include_str!("../input/5.txt");
 pub static TEST_INPUT: &str = include_str!("../input/5_test.txt");
@@ -6,11 +7,14 @@ pub static TEST_INPUT: &str = include_str!("../input/5_test.txt");
 pub fn a(input: &str) -> i32 {
     let (rules_raw, updates_raw) = input.split_once("\n\n").unwrap();
 
-    let mut rules = HashSet::<(i32, i32)>::new();
+    let mut rules = BitVec::from_elem(65535, false);
 
     for rule in rules_raw.lines() {
         let (a, b) = rule.split_once('|').unwrap();
-        rules.insert((a.parse().unwrap(), b.parse().unwrap()));
+        rules.set(
+            a.parse::<usize>().unwrap() * 255 + b.parse::<usize>().unwrap(),
+            true,
+        );
     }
 
     let mut updates = Vec::new();
@@ -29,7 +33,7 @@ pub fn a(input: &str) -> i32 {
     for update in &updates {
         let mut sorted_update = update.clone();
         sorted_update.sort_unstable_by(|a, b| {
-            if rules.contains(&(*a, *b)) {
+            if rules.get((*a * 255 + *b) as usize).unwrap() {
                 Ordering::Less
             } else {
                 Ordering::Greater
@@ -54,11 +58,14 @@ fn test_a() {
 pub fn b(input: &str) -> i32 {
     let (rules_raw, updates_raw) = input.split_once("\n\n").unwrap();
 
-    let mut rules = HashSet::<(i32, i32)>::new();
+    let mut rules = BitVec::from_elem(65535, false);
 
     for rule in rules_raw.lines() {
         let (a, b) = rule.split_once('|').unwrap();
-        rules.insert((a.parse().unwrap(), b.parse().unwrap()));
+        rules.set(
+            a.parse::<usize>().unwrap() * 255 + b.parse::<usize>().unwrap(),
+            true,
+        );
     }
 
     let mut updates = Vec::new();
@@ -77,7 +84,7 @@ pub fn b(input: &str) -> i32 {
     for update in &updates {
         let mut sorted_update = update.clone();
         sorted_update.sort_unstable_by(|a, b| {
-            if rules.contains(&(*a, *b)) {
+            if rules.get((*a * 255 + *b) as usize).unwrap() {
                 Ordering::Less
             } else {
                 Ordering::Greater
