@@ -92,10 +92,6 @@ impl Map {
 
         None
     }
-
-    fn clear(&mut self) {
-        self.data.fill(0);
-    }
 }
 
 impl Display for Map {
@@ -108,6 +104,7 @@ impl Display for Map {
     }
 }
 
+#[derive(Clone, Copy)]
 enum Dir {
     Up,
     Right,
@@ -140,16 +137,6 @@ impl Dir {
             Dir::Right => 0b0010,
             Dir::Down => 0b0100,
             Dir::Left => 0b1000,
-        }
-    }
-
-    fn from_bits(bits: u8) -> Dir {
-        match bits {
-            0b0001 => Dir::Up,
-            0b0010 => Dir::Right,
-            0b0100 => Dir::Down,
-            0b1000 => Dir::Left,
-            _ => panic!("Bad bits"),
         }
     }
 }
@@ -198,7 +185,8 @@ pub fn b(input: &str) -> i32 {
     };
 
     let mut visited_map = Map::empty(map.width, map.height);
-    let mut candidates = Vec::new();
+    let mut new_visited_map = Map::empty(map.width, map.height);
+    let mut loops_count = 0;
 
     {
         let mut dir = Dir::Up;
@@ -215,48 +203,46 @@ pub fn b(input: &str) -> i32 {
             }
 
             if visited_map.get(pos.0, pos.1) == 0 {
-                candidates.push((pos.0, pos.1, dir.bits()));
-                visited_map.set(pos.0, pos.1, dir.bits());
+                let candiadate_x = pos.0;
+                let candiadate_y = pos.1;
+                let candidate_dir = dir;
+
+                map.set(candiadate_x, candiadate_y, b'#');
+
+                let candidate_offset = candidate_dir.offset();
+
+                let mut dir = candidate_dir;
+                let mut pos = (
+                    candiadate_x - candidate_offset.0,
+                    candiadate_y - candidate_offset.1,
+                );
+
+                new_visited_map.data.copy_from_slice(&visited_map.data);
+                new_visited_map.set_or(start_pos.0, start_pos.1, dir.bits());
+
+                while pos.0 > 0 && pos.0 < map.width && pos.1 > 0 && pos.1 < map.height {
+                    let offset = dir.offset();
+                    let new_pos = (pos.0 + offset.0, pos.1 + offset.1);
+
+                    if map.get(new_pos.0, new_pos.1) == b'#' {
+                        dir = dir.turn_right();
+                    } else {
+                        pos = new_pos;
+                    }
+
+                    if (new_visited_map.get(pos.0, pos.1) & dir.bits()) > 0 {
+                        loops_count += 1;
+                        break;
+                    } else {
+                        new_visited_map.set_or(pos.0, pos.1, dir.bits());
+                    }
+                }
+
+                map.set(candiadate_x, candiadate_y, b'.');
             }
+
+            visited_map.set_or(pos.0, pos.1, dir.bits());
         }
-    }
-
-    let mut loops_count = 0;
-
-    for (candiadate_x, candiadate_y, visited_dir) in candidates {
-        map.set(candiadate_x, candiadate_y, b'#');
-
-        let candidate_dir = Dir::from_bits(visited_dir);
-        let candidate_offset = candidate_dir.offset();
-
-        let mut dir = candidate_dir;
-        let mut pos = (
-            candiadate_x - candidate_offset.0,
-            candiadate_y - candidate_offset.1,
-        );
-
-        visited_map.clear();
-        visited_map.set_or(start_pos.0, start_pos.1, dir.bits());
-
-        while pos.0 > 0 && pos.0 < map.width && pos.1 > 0 && pos.1 < map.height {
-            let offset = dir.offset();
-            let new_pos = (pos.0 + offset.0, pos.1 + offset.1);
-
-            if map.get(new_pos.0, new_pos.1) == b'#' {
-                dir = dir.turn_right();
-            } else {
-                pos = new_pos;
-            }
-
-            if (visited_map.get(pos.0, pos.1) & dir.bits()) > 0 {
-                loops_count += 1;
-                break;
-            } else {
-                visited_map.set_or(pos.0, pos.1, dir.bits());
-            }
-        }
-
-        map.set(candiadate_x, candiadate_y, b'.');
     }
 
     loops_count
