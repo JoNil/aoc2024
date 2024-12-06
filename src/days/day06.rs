@@ -235,10 +235,11 @@ pub fn b(input: &str) -> i32 {
     let mut loops_count = 0;
 
     let mut visited_map = Map::empty(map.width, map.height);
+    let mut search_map = map.clone();
 
     for (candiadate_x, candiadate_y, visited_dir) in candidates {
-        let mut map = map.clone();
-        map.set(candiadate_x, candiadate_y, b'#');
+        search_map.data.copy_from_slice(&map.data);
+        search_map.set(candiadate_x, candiadate_y, b'#');
 
         let candidate_dir = Dir::from_bits(visited_dir);
         let candidate_offset = candidate_dir.offset();
@@ -257,7 +258,7 @@ pub fn b(input: &str) -> i32 {
             let offset = dir.offset();
             let new_pos = (pos.0 + offset.0, pos.1 + offset.1);
 
-            if map.get(new_pos.0, new_pos.1) == b'#' {
+            if search_map.get(new_pos.0, new_pos.1) == b'#' {
                 dir = dir.turn_right();
             } else {
                 pos = new_pos;
