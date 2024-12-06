@@ -39,43 +39,16 @@ impl Map {
 
     fn get(&self, x: i32, y: i32) -> u8 {
         let index = x + y * self.width;
-
-        if x < 0 || x >= self.width {
-            return 0;
-        }
-
-        if y < 0 || y >= self.height {
-            return 0;
-        }
-
         self.data[index as usize]
     }
 
     fn set(&mut self, x: i32, y: i32, new: u8) {
         let index = x + y * self.width;
-
-        if x < 0 || x >= self.width {
-            return;
-        }
-
-        if y < 0 || y >= self.height {
-            return;
-        }
-
         self.data[index as usize] = new;
     }
 
     fn set_or(&mut self, x: i32, y: i32, new: u8) {
         let index = x + y * self.width;
-
-        if x < 0 || x >= self.width {
-            return;
-        }
-
-        if y < 0 || y >= self.height {
-            return;
-        }
-
         self.data[index as usize] |= new;
     }
 
@@ -151,7 +124,7 @@ pub fn a(input: &str) -> i32 {
     map.set(pos.0, pos.1, b'.');
     visited_map.set(pos.0, pos.1, b'X');
 
-    while pos.0 > 0 && pos.0 < map.width && pos.1 > 0 && pos.1 < map.height {
+    while pos.0 > 0 && pos.0 < map.width - 1 && pos.1 > 0 && pos.1 < map.height - 1 {
         let offset = dir.offset();
         let new_pos = (pos.0 + offset.0, pos.1 + offset.1);
 
@@ -192,7 +165,7 @@ pub fn b(input: &str) -> i32 {
         let mut dir = Dir::Up;
         let mut pos = start_pos;
 
-        while pos.0 > 0 && pos.0 < map.width && pos.1 > 0 && pos.1 < map.height {
+        while pos.0 > 0 && pos.0 < map.width - 1 && pos.1 > 0 && pos.1 < map.height - 1 {
             let offset = dir.offset();
             let new_pos = (pos.0 + offset.0, pos.1 + offset.1);
 
@@ -220,7 +193,7 @@ pub fn b(input: &str) -> i32 {
                 new_visited_map.data.copy_from_slice(&visited_map.data);
                 new_visited_map.set_or(start_pos.0, start_pos.1, dir.bits());
 
-                while pos.0 > 0 && pos.0 < map.width && pos.1 > 0 && pos.1 < map.height {
+                while pos.0 > 0 && pos.0 < map.width - 1 && pos.1 > 0 && pos.1 < map.height - 1 {
                     let offset = dir.offset();
                     let new_pos = (pos.0 + offset.0, pos.1 + offset.1);
 
