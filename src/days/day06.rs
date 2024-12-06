@@ -203,8 +203,6 @@ pub fn b(input: &str) -> i32 {
         let mut dir = Dir::Up;
         let mut pos = start_pos;
 
-        visited_map.set(pos.0, pos.1, b'X');
-
         while pos.0 > 0 && pos.0 < map.width && pos.1 > 0 && pos.1 < map.height {
             let offset = dir.offset();
             let new_pos = (pos.0 + offset.0, pos.1 + offset.1);
