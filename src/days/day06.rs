@@ -37,20 +37,17 @@ impl Map {
         }
     }
 
-    fn get(&self, x: i32, y: i32) -> u8 {
-        let index = x + y * self.width;
+    fn get(&self, index: i32) -> u8 {
         unsafe { *self.data.get_unchecked(index as usize) }
     }
 
-    fn set(&mut self, x: i32, y: i32, new: u8) {
-        let index = x + y * self.width;
+    fn set(&mut self, index: i32, new: u8) {
         unsafe {
             *self.data.get_unchecked_mut(index as usize) = new;
         }
     }
 
-    fn set_or(&mut self, x: i32, y: i32, new: u8) {
-        let index = x + y * self.width;
+    fn set_or(&mut self, index: i32, new: u8) {
         unsafe {
             *self.data.get_unchecked_mut(index as usize) |= new;
         }
@@ -59,7 +56,7 @@ impl Map {
     fn find_first(&self, needle: u8) -> Option<(i32, i32)> {
         for y in 0..self.height {
             for x in 0..self.width {
-                let v = self.get(x, y);
+                let v = self.get(x + self.width * y);
 
                 if v == needle {
                     return Some((x, y));
@@ -125,20 +122,20 @@ pub fn a(input: &str) -> i32 {
     let mut dir = Dir::Up;
     let mut pos = map.find_first(b'^').unwrap();
 
-    map.set(pos.0, pos.1, b'.');
-    visited_map.set(pos.0, pos.1, b'X');
+    map.set(pos.0 + map.width * pos.1, b'.');
+    visited_map.set(pos.0 + map.width * pos.1, b'X');
 
     while pos.0 > 0 && pos.0 < map.width - 1 && pos.1 > 0 && pos.1 < map.height - 1 {
         let offset = dir.offset();
         let new_pos = (pos.0 + offset.0, pos.1 + offset.1);
 
-        if map.get(new_pos.0, new_pos.1) == b'#' {
+        if map.get(new_pos.0 + map.width * new_pos.1) == b'#' {
             dir = dir.turn_right();
         } else {
             pos = new_pos;
         }
 
-        visited_map.set(pos.0, pos.1, b'X');
+        visited_map.set(pos.0 + map.width * pos.1, b'X');
     }
 
     visited_map.data.iter().filter(|v| **v == b'X').count() as i32
@@ -156,7 +153,7 @@ pub fn b(input: &str) -> i32 {
 
         let start_pos = map.find_first(b'^').unwrap();
 
-        map.set(start_pos.0, start_pos.1, b'.');
+        map.set(start_pos.0 + map.width * start_pos.1, b'.');
 
         (map, start_pos)
     };
@@ -172,19 +169,21 @@ pub fn b(input: &str) -> i32 {
         while pos.0 > 0 && pos.0 < map.width - 1 && pos.1 > 0 && pos.1 < map.height - 1 {
             let offset = dir.offset();
             let new_pos = (pos.0 + offset.0, pos.1 + offset.1);
+            let mut index = new_pos.0 + map.width * new_pos.1;
 
-            if map.get(new_pos.0, new_pos.1) == b'#' {
+            if map.get(new_pos.0 + map.width * new_pos.1) == b'#' {
                 dir = dir.turn_right();
+                index = pos.0 + map.width * pos.1;
             } else {
                 pos = new_pos;
             }
 
-            if visited_map.get(pos.0, pos.1) == 0 {
+            if visited_map.get(index) == 0 {
                 let candiadate_x = pos.0;
                 let candiadate_y = pos.1;
                 let candidate_dir = dir;
 
-                map.set(candiadate_x, candiadate_y, b'#');
+                map.set(candiadate_x + map.width * candiadate_y, b'#');
 
                 let candidate_offset = candidate_dir.offset();
 
@@ -195,30 +194,32 @@ pub fn b(input: &str) -> i32 {
                 );
 
                 new_visited_map.data.copy_from_slice(&visited_map.data);
-                new_visited_map.set_or(pos.0, pos.1, dir.bits());
+                new_visited_map.set_or(pos.0 + map.width * pos.1, dir.bits());
 
                 while pos.0 > 0 && pos.0 < map.width - 1 && pos.1 > 0 && pos.1 < map.height - 1 {
                     let offset = dir.offset();
                     let new_pos = (pos.0 + offset.0, pos.1 + offset.1);
+                    let mut index = new_pos.0 + map.width * new_pos.1;
 
-                    if map.get(new_pos.0, new_pos.1) == b'#' {
+                    if map.get(index) == b'#' {
                         dir = dir.turn_right();
+                        index = pos.0 + map.width * pos.1;
                     } else {
                         pos = new_pos;
                     }
 
-                    if (new_visited_map.get(pos.0, pos.1) & dir.bits()) > 0 {
+                    if (new_visited_map.get(index) & dir.bits()) > 0 {
                         loops_count += 1;
                         break;
                     } else {
-                        new_visited_map.set_or(pos.0, pos.1, dir.bits());
+                        new_visited_map.set_or(index, dir.bits());
                     }
                 }
 
-                map.set(candiadate_x, candiadate_y, b'.');
+                map.set(candiadate_x + map.width * candiadate_y, b'.');
             }
 
-            visited_map.set_or(pos.0, pos.1, dir.bits());
+            visited_map.set_or(index, dir.bits());
         }
     }
 
