@@ -138,6 +138,16 @@ impl Dir {
             Dir::Left => 0b1000,
         }
     }
+
+    fn from_bits(bits: u8) -> Dir {
+        match bits {
+            0b0001 => Dir::Up,
+            0b0010 => Dir::Right,
+            0b0100 => Dir::Down,
+            0b1000 => Dir::Left,
+            _ => panic!("Bad bits"),
+        }
+    }
 }
 
 pub fn a(input: &str) -> i32 {
@@ -224,37 +234,34 @@ pub fn b(input: &str) -> i32 {
         let mut map = map.clone();
         map.set(candiadate_x, candiadate_y, b'#');
 
-        for candidate_dir in [Dir::Up, Dir::Down, Dir::Left, Dir::Right] {
-            if visited_dir == candidate_dir.bits() {
-                let candidate_offset = candidate_dir.offset();
+        let candidate_dir = Dir::from_bits(visited_dir);
+        let candidate_offset = candidate_dir.offset();
 
-                let mut dir = candidate_dir;
-                let mut pos = (
-                    candiadate_x - candidate_offset.0,
-                    candiadate_y - candidate_offset.1,
-                );
+        let mut dir = candidate_dir;
+        let mut pos = (
+            candiadate_x - candidate_offset.0,
+            candiadate_y - candidate_offset.1,
+        );
 
-                let mut visited_map = Map::empty(map.width, map.height);
+        let mut visited_map = Map::empty(map.width, map.height);
 
-                visited_map.set_or(start_pos.0, start_pos.1, dir.bits());
+        visited_map.set_or(start_pos.0, start_pos.1, dir.bits());
 
-                while pos.0 > 0 && pos.0 < map.width && pos.1 > 0 && pos.1 < map.height {
-                    let offset = dir.offset();
-                    let new_pos = (pos.0 + offset.0, pos.1 + offset.1);
+        while pos.0 > 0 && pos.0 < map.width && pos.1 > 0 && pos.1 < map.height {
+            let offset = dir.offset();
+            let new_pos = (pos.0 + offset.0, pos.1 + offset.1);
 
-                    if map.get(new_pos.0, new_pos.1) == b'#' {
-                        dir = dir.turn_right();
-                    } else {
-                        pos = new_pos;
-                    }
+            if map.get(new_pos.0, new_pos.1) == b'#' {
+                dir = dir.turn_right();
+            } else {
+                pos = new_pos;
+            }
 
-                    if (visited_map.get(pos.0, pos.1) & dir.bits()) > 0 {
-                        loops_count += 1;
-                        break;
-                    } else {
-                        visited_map.set_or(pos.0, pos.1, dir.bits());
-                    }
-                }
+            if (visited_map.get(pos.0, pos.1) & dir.bits()) > 0 {
+                loops_count += 1;
+                break;
+            } else {
+                visited_map.set_or(pos.0, pos.1, dir.bits());
             }
         }
     }
