@@ -39,17 +39,21 @@ impl Map {
 
     fn get(&self, x: i32, y: i32) -> u8 {
         let index = x + y * self.width;
-        self.data[index as usize]
+        *self.data.get_unchecked(index as usize)
     }
 
     fn set(&mut self, x: i32, y: i32, new: u8) {
         let index = x + y * self.width;
-        self.data[index as usize] = new;
+        unsafe {
+            *self.data.get_unchecked_mut(index as usize) = new;
+        }
     }
 
     fn set_or(&mut self, x: i32, y: i32, new: u8) {
         let index = x + y * self.width;
-        self.data[index as usize] |= new;
+        unsafe {
+            *self.data.get_unchecked_mut(index as usize) |= new;
+        }
     }
 
     fn find_first(&self, needle: u8) -> Option<(i32, i32)> {
