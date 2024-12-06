@@ -92,6 +92,10 @@ impl Map {
 
         None
     }
+
+    fn clear(&mut self) {
+        self.data.fill(0);
+    }
 }
 
 impl Display for Map {
@@ -230,6 +234,8 @@ pub fn b(input: &str) -> i32 {
 
     let mut loops_count = 0;
 
+    let mut visited_map = Map::empty(map.width, map.height);
+
     for (candiadate_x, candiadate_y, visited_dir) in candidates {
         let mut map = map.clone();
         map.set(candiadate_x, candiadate_y, b'#');
@@ -243,7 +249,7 @@ pub fn b(input: &str) -> i32 {
             candiadate_y - candidate_offset.1,
         );
 
-        let mut visited_map = Map::empty(map.width, map.height);
+        visited_map.clear();
 
         visited_map.set_or(start_pos.0, start_pos.1, dir.bits());
 
