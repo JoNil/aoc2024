@@ -79,11 +79,12 @@ impl Display for Map {
 }
 
 #[derive(Clone, Copy)]
+#[repr(u8)]
 enum Dir {
-    Up,
-    Right,
-    Down,
-    Left,
+    Up = 0b0001,
+    Right = 0b0010,
+    Down = 0b0100,
+    Left = 0b1000,
 }
 
 impl Dir {
@@ -106,12 +107,7 @@ impl Dir {
     }
 
     fn bits(&self) -> u8 {
-        match self {
-            Dir::Up => 0b0001,
-            Dir::Right => 0b0010,
-            Dir::Down => 0b0100,
-            Dir::Left => 0b1000,
-        }
+        *self as u8
     }
 }
 
