@@ -195,7 +195,7 @@ pub fn b(input: &str) -> i32 {
                 );
 
                 new_visited_map.data.copy_from_slice(&visited_map.data);
-                new_visited_map.set_or(start_pos.0, start_pos.1, dir.bits());
+                new_visited_map.set_or(pos.0, pos.1, dir.bits());
 
                 while pos.0 > 0 && pos.0 < map.width - 1 && pos.1 > 0 && pos.1 < map.height - 1 {
                     let offset = dir.offset();
