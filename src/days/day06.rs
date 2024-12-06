@@ -266,8 +266,6 @@ pub fn b(input: &str) -> i32 {
         }
     }
 
-    println!("{}", !Dir::Up.bits());
-
     loops_count
 }
 
