@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use aoc2022::*;
+use aoc2024::*;
 
 fn main() {
     let start = Instant::now();
