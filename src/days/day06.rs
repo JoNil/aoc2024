@@ -31,7 +31,7 @@ impl Map {
 
     fn empty(width: i32, height: i32) -> Map {
         Map {
-            data: vec![b'.'; (width * height) as usize],
+            data: vec![0; (width * height) as usize],
             width,
             height,
         }
@@ -41,11 +41,11 @@ impl Map {
         let index = x + y * self.width;
 
         if x < 0 || x >= self.width {
-            return b'.';
+            return 0;
         }
 
         if y < 0 || y >= self.height {
-            return b'.';
+            return 0;
         }
 
         self.data[index as usize]
@@ -63,6 +63,20 @@ impl Map {
         }
 
         self.data[index as usize] = new;
+    }
+
+    fn set_or(&mut self, x: i32, y: i32, new: u8) {
+        let index = x + y * self.width;
+
+        if x < 0 || x >= self.width {
+            return;
+        }
+
+        if y < 0 || y >= self.height {
+            return;
+        }
+
+        self.data[index as usize] |= new;
     }
 
     fn find_first(&self, needle: u8) -> Option<(i32, i32)> {
@@ -113,6 +127,15 @@ impl Dir {
             Dir::Right => Dir::Down,
             Dir::Down => Dir::Left,
             Dir::Left => Dir::Up,
+        }
+    }
+
+    fn bits(&self) -> u8 {
+        match self {
+            Dir::Up => 0b0001,
+            Dir::Right => 0b0010,
+            Dir::Down => 0b0100,
+            Dir::Left => 0b1000,
         }
     }
 }
@@ -198,15 +221,12 @@ pub fn b(input: &str) -> i32 {
         let mut map = map.clone();
         map.set(candiadate.0, candiadate.1, b'#');
 
-        let mut visited_map_r = Map::empty(map.width, map.height);
-        let mut visited_map_l = Map::empty(map.width, map.height);
-        let mut visited_map_u = Map::empty(map.width, map.height);
-        let mut visited_map_d = Map::empty(map.width, map.height);
+        let mut visited_map = Map::empty(map.width, map.height);
 
         let mut dir = Dir::Up;
         let mut pos = start_pos;
 
-        visited_map_u.set(start_pos.0, start_pos.1, b'X');
+        visited_map.set_or(start_pos.0, start_pos.1, dir.bits());
 
         while pos.0 > 0 && pos.0 < map.width && pos.1 > 0 && pos.1 < map.height {
             let offset = dir.offset();
@@ -218,42 +238,18 @@ pub fn b(input: &str) -> i32 {
                 pos = new_pos;
             }
 
-            match dir {
-                Dir::Up => {
-                    if visited_map_u.get(pos.0, pos.1) == b'X' {
-                        loops_count += 1;
-                        break;
-                    } else {
-                        visited_map_u.set(pos.0, pos.1, b'X');
-                    }
-                }
-                Dir::Right => {
-                    if visited_map_r.get(pos.0, pos.1) == b'X' {
-                        loops_count += 1;
-                        break;
-                    } else {
-                        visited_map_r.set(pos.0, pos.1, b'X');
-                    }
-                }
-                Dir::Down => {
-                    if visited_map_d.get(pos.0, pos.1) == b'X' {
-                        loops_count += 1;
-                        break;
-                    } else {
-                        visited_map_d.set(pos.0, pos.1, b'X');
-                    }
-                }
-                Dir::Left => {
-                    if visited_map_l.get(pos.0, pos.1) == b'X' {
-                        loops_count += 1;
-                        break;
-                    } else {
-                        visited_map_l.set(pos.0, pos.1, b'X');
-                    }
-                }
+
+
+            if (visited_map.get(pos.0, pos.1) & dir.bits()) > 0 {
+                loops_count += 1;
+                break;
+            } else {
+                visited_map.set_or(pos.0, pos.1, dir.bits());
             }
         }
     }
+
+    println!("{}", !Dir::Up.bits());
 
     loops_count
 }
