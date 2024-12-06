@@ -8,3 +8,8 @@ edition = "2021"
 [dependencies]
 bit-vec = "0.8"
 parse-display = "0.10"
+
+[profile.release]
+codegen-units = 1
+lto = "fat"
+panic = "abort"
