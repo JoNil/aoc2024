@@ -198,6 +198,7 @@ pub fn b(input: &str) -> i32 {
     };
 
     let mut visited_map = Map::empty(map.width, map.height);
+    let mut candidates = Vec::new();
 
     {
         let mut dir = Dir::Up;
@@ -214,18 +215,8 @@ pub fn b(input: &str) -> i32 {
             }
 
             if visited_map.get(pos.0, pos.1) == 0 {
+                candidates.push((pos.0, pos.1, dir.bits()));
                 visited_map.set(pos.0, pos.1, dir.bits());
-            }
-        }
-    }
-
-    let mut candidates = Vec::new();
-
-    for y in 0..map.height {
-        for x in 0..map.width {
-            let visited = visited_map.get(x, y);
-            if visited > 0 && !(x == start_pos.0 && y == start_pos.1) {
-                candidates.push((x, y, visited))
             }
         }
     }
