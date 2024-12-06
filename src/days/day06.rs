@@ -261,5 +261,5 @@ pub fn b(input: &str) -> i32 {
 #[test]
 fn test_b() {
     assert_eq!(b(TEST_INPUT), 6);
-    assert_eq!(b(INPUT), 0);
+    assert_eq!(b(INPUT), 1697);
 }
