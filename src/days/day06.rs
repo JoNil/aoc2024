@@ -234,7 +234,6 @@ pub fn b(input: &str) -> i32 {
 
     let mut loops_count = 0;
 
-    let mut visited_map = Map::empty(map.width, map.height);
     let mut search_map = map.clone();
 
     for (candiadate_x, candiadate_y, visited_dir) in candidates {
@@ -251,7 +250,6 @@ pub fn b(input: &str) -> i32 {
         );
 
         visited_map.clear();
-
         visited_map.set_or(start_pos.0, start_pos.1, dir.bits());
 
         while pos.0 > 0 && pos.0 < map.width && pos.1 > 0 && pos.1 < map.height {
