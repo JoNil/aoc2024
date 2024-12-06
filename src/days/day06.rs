@@ -39,7 +39,7 @@ impl Map {
 
     fn get(&self, x: i32, y: i32) -> u8 {
         let index = x + y * self.width;
-        *self.data.get_unchecked(index as usize)
+        unsafe { *self.data.get_unchecked(index as usize) }
     }
 
     fn set(&mut self, x: i32, y: i32, new: u8) {
