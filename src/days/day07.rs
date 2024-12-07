@@ -7,17 +7,21 @@ fn is_solvable(answer: i64, result: i64, remaining_numbers: &[i64]) -> bool {
     }
 
     let new_result = result + remaining_numbers[0];
-    let new_result = is_solvable(answer, new_result, &remaining_numbers[1..]);
+    if new_result <= answer {
+        let is_answer = is_solvable(answer, new_result, &remaining_numbers[1..]);
 
-    if new_result {
-        return true;
+        if is_answer {
+            return true;
+        }
     }
 
     let new_result = result * remaining_numbers[0];
-    let new_result = is_solvable(answer, new_result, &remaining_numbers[1..]);
+    if new_result <= answer {
+        let is_answer = is_solvable(answer, new_result, &remaining_numbers[1..]);
 
-    if new_result {
-        return true;
+        if is_answer {
+            return true;
+        }
     }
 
     false
@@ -49,6 +53,12 @@ pub fn a(input: &str) -> i64 {
     total_calibration_result
 }
 
+#[test]
+fn test_a() {
+    assert_eq!(a(TEST_INPUT), 3749);
+    assert_eq!(a(INPUT), 5512534574980);
+}
+
 fn count_digits(mut n: i64) -> i64 {
     if n == 0 {
         return 1;
@@ -64,38 +74,38 @@ fn count_digits(mut n: i64) -> i64 {
     count
 }
 
-#[test]
-fn test_a() {
-    assert_eq!(a(TEST_INPUT), 3749);
-    assert_eq!(a(INPUT), 5512534574980);
-}
-
 fn is_solvable_b(answer: i64, result: i64, remaining_numbers: &[i64]) -> bool {
     if remaining_numbers.is_empty() {
         return result == answer;
     }
 
     let new_result = result + remaining_numbers[0];
-    let new_result = is_solvable_b(answer, new_result, &remaining_numbers[1..]);
+    if new_result <= answer {
+        let is_answer = is_solvable_b(answer, new_result, &remaining_numbers[1..]);
 
-    if new_result {
-        return true;
+        if is_answer {
+            return true;
+        }
     }
 
     let new_result = result * remaining_numbers[0];
-    let new_result = is_solvable_b(answer, new_result, &remaining_numbers[1..]);
+    if new_result <= answer {
+        let is_answer = is_solvable_b(answer, new_result, &remaining_numbers[1..]);
 
-    if new_result {
-        return true;
+        if is_answer {
+            return true;
+        }
     }
 
     let digits = count_digits(remaining_numbers[0]);
-
     let new_result = result * 10i64.pow(digits as _) + remaining_numbers[0];
-    let new_result = is_solvable_b(answer, new_result, &remaining_numbers[1..]);
 
-    if new_result {
-        return true;
+    if new_result <= answer {
+        let is_answer = is_solvable_b(answer, new_result, &remaining_numbers[1..]);
+
+        if is_answer {
+            return true;
+        }
     }
 
     false
