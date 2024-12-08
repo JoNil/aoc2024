@@ -23,7 +23,10 @@ fn main() {
     //day06::b(day06::INPUT);
 
     //day07::a(day07::INPUT);
-    day07::b(day07::INPUT);
+    //day07::b(day07::INPUT);
+
+    day08::a(day08::TEST_INPUT);
+    //day08::b(day08::INPUT);
 
     let elapsed = start.elapsed();
 
