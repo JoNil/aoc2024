@@ -1,4 +1,5 @@
-use std::{fmt::Display, str};
+use glam::{ivec2, IVec2};
+use std::{collections::HashMap, fmt::Display, str};
 
 pub static INPUT: &str = include_str!("../input/8.txt");
 pub static TEST_INPUT: &str = include_str!("../input/8_test.txt");
@@ -79,15 +80,43 @@ impl Display for Map {
 pub fn a(input: &str) -> i32 {
     let map = Map::new(input);
 
-    println!("{}", map);
+    let mut antennas = HashMap::<u8, Vec<IVec2>>::new();
 
-    0
+    for y in 0..map.height {
+        for x in 0..map.width {
+            let v = map.get(x, y);
+            if v != b'.' {
+                antennas.entry(v).or_default().push(ivec2(x, y));
+            }
+        }
+    }
+
+    let mut antinode_map = Map::empty(map.width, map.height);
+
+    for antennas in antennas.values() {
+        for a in 0..antennas.len() {
+            for b in (a + 1)..antennas.len() {
+                let a = antennas[a];
+                let b = antennas[b];
+
+                let diff = a - b;
+
+                let antinode = a + diff;
+                antinode_map.set(antinode.x, antinode.y, b'#');
+
+                let antinode = b - diff;
+                antinode_map.set(antinode.x, antinode.y, b'#');
+            }
+        }
+    }
+
+    antinode_map.data.iter().filter(|v| **v == b'#').count() as _
 }
 
 #[test]
 fn test_a() {
     assert_eq!(a(TEST_INPUT), 14);
-    assert_eq!(a(INPUT), 0);
+    assert_eq!(a(INPUT), 259);
 }
 
 pub fn b(input: &str) -> i32 {
