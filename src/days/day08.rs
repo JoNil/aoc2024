@@ -52,18 +52,20 @@ impl Map {
         self.data[index as usize]
     }
 
-    fn set(&mut self, x: i32, y: i32, new: u8) {
+    fn set(&mut self, x: i32, y: i32, new: u8) -> bool {
         let index = x + y * self.width;
 
         if x < 0 || x >= self.width {
-            return;
+            return false;
         }
 
         if y < 0 || y >= self.height {
-            return;
+            return false;
         }
 
         self.data[index as usize] = new;
+
+        true
     }
 }
 
@@ -120,11 +122,55 @@ fn test_a() {
 }
 
 pub fn b(input: &str) -> i32 {
-    0
+    let map = Map::new(input);
+
+    let mut antennas = HashMap::<u8, Vec<IVec2>>::new();
+
+    for y in 0..map.height {
+        for x in 0..map.width {
+            let v = map.get(x, y);
+            if v != b'.' {
+                antennas.entry(v).or_default().push(ivec2(x, y));
+            }
+        }
+    }
+
+    let mut antinode_map = Map::empty(map.width, map.height);
+
+    for antennas in antennas.values() {
+        for a in 0..antennas.len() {
+            for b in (a + 1)..antennas.len() {
+                let a = antennas[a];
+                let b = antennas[b];
+
+                let diff = a - b;
+
+                let mut v = a;
+
+                loop {
+                    v -= diff;
+                    if !antinode_map.set(v.x, v.y, b'#') {
+                        break;
+                    }
+                }
+
+                let mut v = b;
+
+                loop {
+                    v += diff;
+                    if !antinode_map.set(v.x, v.y, b'#') {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    antinode_map.data.iter().filter(|v| **v == b'#').count() as _
 }
 
 #[test]
 fn test_b() {
-    assert_eq!(b(TEST_INPUT), 0);
-    assert_eq!(b(INPUT), 0);
+    assert_eq!(b(TEST_INPUT), 34);
+    assert_eq!(b(INPUT), 927);
 }
