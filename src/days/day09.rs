@@ -1,26 +1,28 @@
+use std::collections::VecDeque;
+
 pub static INPUT: &str = include_str!("../input/9.txt");
 pub static TEST_INPUT: &str = include_str!("../input/9_test.txt");
 
 struct Block {
     index: i32,
-    file: i32,
-    free: i32,
+    file: u8,
+    free: u8,
 }
 
 pub fn a(input: &str) -> i64 {
-    let mut blocks = Vec::new();
+    let mut blocks = VecDeque::new();
 
     for (index, chunk) in input.trim().as_bytes().chunks(2).enumerate() {
         if chunk.len() == 2 {
-            blocks.push(Block {
+            blocks.push_back(Block {
                 index: index as i32,
-                file: (chunk[0] - 48) as i32,
-                free: (chunk[1] - 48) as i32,
+                file: (chunk[0] - 48) as u8,
+                free: (chunk[1] - 48) as u8,
             });
         } else {
-            blocks.push(Block {
+            blocks.push_back(Block {
                 index: index as i32,
-                file: (chunk[0] - 48) as i32,
+                file: (chunk[0] - 48) as u8,
                 free: 0,
             })
         }
@@ -67,10 +69,10 @@ pub fn a(input: &str) -> i64 {
 
     for block in blocks.iter() {
         for i in 0..block.file {
-            checksum += ((i + block_counter) * block.index) as i64;
+            checksum += ((i as i32 + block_counter) * block.index) as i64;
         }
 
-        block_counter += block.file;
+        block_counter += block.file as i32;
     }
 
     checksum
@@ -89,13 +91,13 @@ pub fn b(input: &str) -> i64 {
         if chunk.len() == 2 {
             blocks.push(Block {
                 index: index as i32,
-                file: (chunk[0] - 48) as i32,
-                free: (chunk[1] - 48) as i32,
+                file: (chunk[0] - 48) as u8,
+                free: (chunk[1] - 48) as u8,
             });
         } else {
             blocks.push(Block {
                 index: index as i32,
-                file: (chunk[0] - 48) as i32,
+                file: (chunk[0] - 48) as u8,
                 free: 0,
             })
         }
@@ -138,11 +140,11 @@ pub fn b(input: &str) -> i64 {
 
     for block in blocks.iter() {
         for i in 0..block.file {
-            checksum += ((i + block_counter) * block.index) as i64;
+            checksum += ((i as i32 + block_counter) * block.index) as i64;
         }
 
-        block_counter += block.file;
-        block_counter += block.free;
+        block_counter += block.file as i32;
+        block_counter += block.free as i32;
     }
 
     checksum
