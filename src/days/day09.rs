@@ -102,16 +102,12 @@ pub fn b(input: &str) -> i64 {
     }
 
     let mut from_index = blocks.len() - 1;
-    let mut first_with_space = 0;
+    let mut first_with_space = [0; 10];
 
     while from_index != 0 {
         let space = blocks[from_index].file;
 
-        for to_index in first_with_space..from_index {
-            if blocks[to_index].free == 0 && to_index == first_with_space {
-                first_with_space += 1;
-            }
-
+        for to_index in first_with_space[space as usize]..from_index {
             if blocks[to_index].free >= space {
                 blocks.insert(
                     to_index + 1,
@@ -121,6 +117,8 @@ pub fn b(input: &str) -> i64 {
                         free: blocks[to_index].free - space,
                     },
                 );
+
+                first_with_space[space as usize] = to_index;
 
                 from_index += 1;
 
