@@ -1,5 +1,3 @@
-use std::iter;
-
 pub static INPUT: &str = include_str!("../input/9.txt");
 pub static TEST_INPUT: &str = include_str!("../input/9_test.txt");
 
