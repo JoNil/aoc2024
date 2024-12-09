@@ -9,17 +9,6 @@ struct Block {
     free: i32,
 }
 
-fn expand(blocks: &[Block]) {
-    let mut res = String::new();
-
-    for block in blocks.iter() {
-        res.extend(iter::repeat((block.index + 48) as u8 as char).take(block.file as _));
-        res.extend(iter::repeat('.').take(block.free as _));
-    }
-
-    println!("{}", res);
-}
-
 pub fn a(input: &str) -> i64 {
     let mut blocks = Vec::new();
 
@@ -53,8 +42,6 @@ pub fn a(input: &str) -> i64 {
             continue;
         }
 
-        //expand(&blocks);
-
         if blocks[to_index].index == blocks[from_index].index {
             blocks[to_index].file += 1;
             blocks[to_index].free -= 1;
@@ -77,8 +64,6 @@ pub fn a(input: &str) -> i64 {
         }
     }
 
-    //expand(&blocks);
-
     let mut checksum = 0;
     let mut block_counter = 0;
 
@@ -99,12 +84,83 @@ fn test_a() {
     assert_eq!(a(INPUT), 6384282079460);
 }
 
-pub fn b(input: &str) -> i32 {
-    0
+fn expand(blocks: &[Block]) {
+    let mut res = String::new();
+
+    for block in blocks.iter() {
+        res.extend(iter::repeat((block.index + 48) as u8 as char).take(block.file as _));
+        res.extend(iter::repeat('.').take(block.free as _));
+    }
+
+    println!("{}", res);
+}
+
+pub fn b(input: &str) -> i64 {
+    let mut blocks = Vec::new();
+
+    for (index, chunk) in input.trim().as_bytes().chunks(2).enumerate() {
+        if chunk.len() == 2 {
+            blocks.push(Block {
+                index: index as i32,
+                file: (chunk[0] - 48) as i32,
+                free: (chunk[1] - 48) as i32,
+            });
+        } else {
+            blocks.push(Block {
+                index: index as i32,
+                file: (chunk[0] - 48) as i32,
+                free: 0,
+            })
+        }
+    }
+
+    let mut from_index = blocks.len() - 1;
+
+    while from_index != 0 {
+        let space = blocks[from_index].file;
+
+        for to_index in 0..from_index {
+            if blocks[to_index].free >= space {
+                blocks.insert(
+                    to_index + 1,
+                    Block {
+                        index: blocks[from_index].index,
+                        file: space,
+                        free: blocks[to_index].free - space,
+                    },
+                );
+
+                from_index += 1;
+
+                blocks[to_index].free = 0;
+                blocks[from_index].file = 0;
+                blocks[from_index].free += space;
+
+                break;
+            }
+        }
+
+        expand(&blocks);
+
+        from_index -= 1;
+    }
+
+    let mut checksum = 0;
+    let mut block_counter = 0;
+
+    for block in blocks.iter() {
+        for i in 0..block.file {
+            checksum += ((i + block_counter) * block.index) as i64;
+        }
+
+        block_counter += block.file;
+    }
+
+    checksum
 }
 
 #[test]
 fn test_b() {
-    assert_eq!(b(TEST_INPUT), 0);
+    assert_eq!(b(TEST_INPUT), 2858);
     assert_eq!(b(INPUT), 0);
 }
