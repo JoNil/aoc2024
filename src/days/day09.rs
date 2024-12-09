@@ -53,6 +53,10 @@ pub fn a(input: &str) -> i64 {
 
             block_counter += blocks[block_index].free as i32;
         }
+
+        if blocks[block_index].file == 0 {
+            break;
+        }
     }
 
     checksum
@@ -65,7 +69,7 @@ fn test_a() {
 }
 
 pub fn b(input: &str) -> i64 {
-    let mut blocks = VecDeque::new();
+    let mut blocks = VecDeque::with_capacity(input.len());
 
     for (index, chunk) in input.trim().as_bytes().chunks(2).enumerate() {
         if chunk.len() == 2 {
