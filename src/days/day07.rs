@@ -100,7 +100,6 @@ fn is_solvable_b(answer: i64, result: i64, remaining_numbers: &[i64], ops: &mut 
     }
 
     let new_result = times_10_n(result, number) + number;
-
     if new_result <= answer {
         let is_answer = is_solvable_b(answer, new_result, rest, ops);
 
