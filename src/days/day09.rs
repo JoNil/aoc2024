@@ -10,17 +10,17 @@ struct Block {
 }
 
 pub fn a(input: &str) -> i64 {
-    let mut blocks = VecDeque::with_capacity(input.len());
+    let mut blocks = Vec::with_capacity(input.len() / 2);
 
     for (index, chunk) in input.trim().as_bytes().chunks(2).enumerate() {
         if chunk.len() == 2 {
-            blocks.push_back(Block {
+            blocks.push(Block {
                 index: index as i16,
                 file: chunk[0] - 48,
                 free: chunk[1] - 48,
             });
         } else {
-            blocks.push_back(Block {
+            blocks.push(Block {
                 index: index as i16,
                 file: chunk[0] - 48,
                 free: 0,
@@ -28,53 +28,31 @@ pub fn a(input: &str) -> i64 {
         }
     }
 
-    let mut to_index = 0;
-    let mut from_index = blocks.len() - 1;
-
-    while to_index < from_index {
-        if blocks[from_index].file == 0 {
-            from_index -= 1;
-            continue;
-        }
-
-        if blocks[to_index].free == 0 {
-            to_index += 1;
-            continue;
-        }
-
-        if blocks[to_index].index == blocks[from_index].index {
-            let blocks_to_move = blocks[from_index].file.min(blocks[to_index].free);
-
-            blocks[to_index].file += blocks_to_move;
-            blocks[to_index].free -= blocks_to_move;
-            blocks[from_index].file -= blocks_to_move;
-            blocks[from_index].free += blocks_to_move;
-        } else {
-            blocks.insert(
-                to_index + 1,
-                Block {
-                    index: blocks[from_index].index,
-                    file: 0,
-                    free: blocks[to_index].free,
-                },
-            );
-
-            blocks[to_index].free = 0;
-
-            from_index += 1;
-            to_index += 1;
-        }
-    }
-
     let mut checksum = 0;
     let mut block_counter = 0;
+    let mut free_index = blocks.len() - 1;
 
-    for block in blocks.iter() {
-        for i in 0..block.file {
-            checksum += ((i as i32 + block_counter) * block.index as i32) as i64;
+    for block_index in 0..blocks.len() {
+        for i in 0..blocks[block_index].file {
+            checksum += ((i as i32 + block_counter) * blocks[block_index].index as i32) as i64;
         }
 
-        block_counter += block.file as i32;
+        block_counter += blocks[block_index].file as i32;
+
+        if free_index - 1 > block_index {
+            for i in 0..blocks[block_index].free {
+                if blocks[free_index].file == 0 {
+                    free_index -= 1;
+                }
+
+                let index = blocks[free_index].index;
+                blocks[free_index].file -= 1;
+
+                checksum += ((i as i32 + block_counter) * index as i32) as i64;
+            }
+
+            block_counter += blocks[block_index].free as i32;
+        }
     }
 
     checksum
