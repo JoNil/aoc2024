@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 pub static INPUT: &str = include_str!("../input/7.txt");
 pub static TEST_INPUT: &str = include_str!("../input/7_test.txt");
 
@@ -71,7 +69,17 @@ fn times_10_n(a: i64, n: i64) -> i64 {
     }
 }
 
-fn is_solvable_b(answer: i64, result: i64, remaining_numbers: &[i64], ops: &mut String) -> bool {
+fn digits(n: i64) -> i64 {
+    if n < 10 {
+        1
+    } else if n < 100 {
+        2
+    } else {
+        3
+    }
+}
+
+fn is_solvable_b_old(answer: i64, result: i64, remaining_numbers: &[i64]) -> bool {
     if remaining_numbers.is_empty() {
         return result == answer;
     }
@@ -81,30 +89,76 @@ fn is_solvable_b(answer: i64, result: i64, remaining_numbers: &[i64], ops: &mut 
 
     let new_result = result + number;
     if new_result <= answer {
-        let is_answer = is_solvable_b(answer, new_result, rest, ops);
+        let is_answer = is_solvable_b_old(answer, new_result, rest);
 
         if is_answer {
-            *ops = format!("+{ops}");
             return true;
         }
     }
 
     let new_result = result * number;
     if new_result <= answer {
-        let is_answer = is_solvable_b(answer, new_result, rest, ops);
+        let is_answer = is_solvable_b_old(answer, new_result, rest);
 
         if is_answer {
-            *ops = format!("*{ops}");
             return true;
         }
     }
 
     let new_result = times_10_n(result, number) + number;
     if new_result <= answer {
-        let is_answer = is_solvable_b(answer, new_result, rest, ops);
+        let is_answer = is_solvable_b_old(answer, new_result, rest);
 
         if is_answer {
-            *ops = format!("|{ops}");
+            return true;
+        }
+    }
+
+    false
+}
+
+fn is_solvable_b(answer: i64, remaining_numbers: &[i64]) -> bool {
+    if remaining_numbers.len() == 1 {
+        return answer == remaining_numbers[0];
+    }
+
+    let last = remaining_numbers.len() - 1;
+    let number = remaining_numbers[last];
+    let rest = &remaining_numbers[..last];
+
+    let new_result = answer - number;
+    if new_result > 0 {
+        let is_answer = is_solvable_b(new_result, rest);
+
+        if is_answer {
+            return true;
+        }
+    }
+
+    let divisible = answer % number == 0;
+    let new_result = answer / number;
+    if divisible {
+        let is_answer = is_solvable_b(new_result, rest);
+
+        if is_answer {
+            return true;
+        }
+    }
+
+    let digits = digits(number);
+
+    let mut lower = 0;
+    let mut new_result = answer;
+
+    for _ in 0..digits {
+        lower = lower * 10 + new_result % 10;
+        new_result /= 10;
+    }
+
+    if lower == number {
+        let is_answer = is_solvable_b(new_result, rest);
+
+        if is_answer {
             return true;
         }
     }
@@ -130,34 +184,13 @@ pub fn b(input: &str) -> i64 {
     let mut total_calibration_result = 0;
 
     for (answer, numbers) in equations {
-        let start = Instant::now();
+        let old = is_solvable_b_old(answer, numbers[0], &numbers[1..]);
 
-        let mut ops = String::new();
+        let new = is_solvable_b(answer, &numbers);
 
-        let solved = if is_solvable_b(answer, numbers[0], &numbers[1..], &mut ops) {
+        if old {
             total_calibration_result += answer;
-            true
-        } else {
-            false
         };
-
-        let time = start.elapsed().as_micros();
-
-        if time > 50 {
-            print!("{}: ", answer);
-            if solved {
-                print!("{}", numbers[0]);
-                for (n, op) in numbers[1..].iter().zip(ops.chars()) {
-                    print!(" {op} {n}");
-                }
-            } else {
-                for n in numbers {
-                    print!("{n} ");
-                }
-            }
-
-            println!(" time {}us", time,);
-        }
     }
 
     total_calibration_result
