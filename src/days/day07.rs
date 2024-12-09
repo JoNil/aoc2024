@@ -59,16 +59,6 @@ fn test_a() {
     assert_eq!(a(INPUT), 5512534574980);
 }
 
-fn times_10_n(a: i64, n: i64) -> i64 {
-    if n < 10 {
-        a * 10
-    } else if n < 100 {
-        a * 100
-    } else {
-        a * 1000
-    }
-}
-
 fn digits(n: i64) -> i64 {
     if n < 10 {
         1
@@ -77,44 +67,6 @@ fn digits(n: i64) -> i64 {
     } else {
         3
     }
-}
-
-fn is_solvable_b_old(answer: i64, result: i64, remaining_numbers: &[i64]) -> bool {
-    if remaining_numbers.is_empty() {
-        return result == answer;
-    }
-
-    let number = remaining_numbers[0];
-    let rest = &remaining_numbers[1..];
-
-    let new_result = result + number;
-    if new_result <= answer {
-        let is_answer = is_solvable_b_old(answer, new_result, rest);
-
-        if is_answer {
-            return true;
-        }
-    }
-
-    let new_result = result * number;
-    if new_result <= answer {
-        let is_answer = is_solvable_b_old(answer, new_result, rest);
-
-        if is_answer {
-            return true;
-        }
-    }
-
-    let new_result = times_10_n(result, number) + number;
-    if new_result <= answer {
-        let is_answer = is_solvable_b_old(answer, new_result, rest);
-
-        if is_answer {
-            return true;
-        }
-    }
-
-    false
 }
 
 fn is_solvable_b(answer: i64, remaining_numbers: &[i64]) -> bool {
@@ -150,8 +102,8 @@ fn is_solvable_b(answer: i64, remaining_numbers: &[i64]) -> bool {
     let mut lower = 0;
     let mut new_result = answer;
 
-    for _ in 0..digits {
-        lower = lower * 10 + new_result % 10;
+    for digit in 0..digits {
+        lower += new_result % 10 * 10i64.pow(digit as u32);
         new_result /= 10;
     }
 
@@ -184,11 +136,7 @@ pub fn b(input: &str) -> i64 {
     let mut total_calibration_result = 0;
 
     for (answer, numbers) in equations {
-        let old = is_solvable_b_old(answer, numbers[0], &numbers[1..]);
-
-        let new = is_solvable_b(answer, &numbers);
-
-        if old {
+        if is_solvable_b(answer, &numbers) {
             total_calibration_result += answer;
         };
     }
