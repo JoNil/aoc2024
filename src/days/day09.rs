@@ -84,17 +84,6 @@ fn test_a() {
     assert_eq!(a(INPUT), 6384282079460);
 }
 
-fn expand(blocks: &[Block]) {
-    let mut res = String::new();
-
-    for block in blocks.iter() {
-        res.extend(iter::repeat((block.index + 48) as u8 as char).take(block.file as _));
-        res.extend(iter::repeat('.').take(block.free as _));
-    }
-
-    println!("{}", res);
-}
-
 pub fn b(input: &str) -> i64 {
     let mut blocks = Vec::new();
 
@@ -140,8 +129,6 @@ pub fn b(input: &str) -> i64 {
             }
         }
 
-        expand(&blocks);
-
         from_index -= 1;
     }
 
@@ -154,6 +141,7 @@ pub fn b(input: &str) -> i64 {
         }
 
         block_counter += block.file;
+        block_counter += block.free;
     }
 
     checksum
@@ -162,5 +150,5 @@ pub fn b(input: &str) -> i64 {
 #[test]
 fn test_b() {
     assert_eq!(b(TEST_INPUT), 2858);
-    assert_eq!(b(INPUT), 0);
+    assert_eq!(b(INPUT), 6408966547049);
 }
