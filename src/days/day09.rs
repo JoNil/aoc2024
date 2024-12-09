@@ -16,13 +16,13 @@ pub fn a(input: &str) -> i64 {
         if chunk.len() == 2 {
             blocks.push_back(Block {
                 index: index as i32,
-                file: (chunk[0] - 48) as u8,
-                free: (chunk[1] - 48) as u8,
+                file: chunk[0] - 48,
+                free: chunk[1] - 48,
             });
         } else {
             blocks.push_back(Block {
                 index: index as i32,
-                file: (chunk[0] - 48) as u8,
+                file: chunk[0] - 48,
                 free: 0,
             })
         }
@@ -91,13 +91,13 @@ pub fn b(input: &str) -> i64 {
         if chunk.len() == 2 {
             blocks.push(Block {
                 index: index as i32,
-                file: (chunk[0] - 48) as u8,
-                free: (chunk[1] - 48) as u8,
+                file: chunk[0] - 48,
+                free: chunk[1] - 48,
             });
         } else {
             blocks.push(Block {
                 index: index as i32,
-                file: (chunk[0] - 48) as u8,
+                file: chunk[0] - 48,
                 free: 0,
             })
         }
