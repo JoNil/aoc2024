@@ -1,5 +1,6 @@
 use glam::{ivec2, IVec2};
-use std::{collections::HashSet, fmt::Display, str};
+use smallvec::{smallvec, SmallVec};
+use std::{fmt::Display, str};
 
 pub static INPUT: &str = include_str!("../input/10.txt");
 pub static TEST_INPUT: &str = include_str!("../input/10_test.txt");
@@ -63,24 +64,26 @@ impl Display for Map {
     }
 }
 
-fn find_paths(map: &Map, reachable_nines: &mut Vec<HashSet<IVec2>>, pos: IVec2) -> HashSet<IVec2> {
+fn find_paths(
+    map: &Map,
+    reachable_nines: &mut Vec<SmallVec<[(u8, u8); 4]>>,
+    pos: IVec2,
+) -> SmallVec<[(u8, u8); 4]> {
     {
         let cached = reachable_nines
             .get((pos.x + pos.y * map.width) as usize)
             .unwrap();
-        if cached.len() > 0 {
+        if !cached.is_empty() {
             return cached.clone();
         }
     }
 
     let value = map.get(pos);
     if value == 9 {
-        let mut res = HashSet::new();
-        res.insert(pos);
-        return res;
+        return smallvec![(pos.x as u8, pos.y as u8)];
     }
 
-    let mut possible_paths = HashSet::new();
+    let mut possible_paths = SmallVec::new();
 
     for possible_dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
         let candidate_pos = pos + possible_dir;
@@ -88,10 +91,11 @@ fn find_paths(map: &Map, reachable_nines: &mut Vec<HashSet<IVec2>>, pos: IVec2) 
 
         if candidate_val as i32 - value as i32 == 1 {
             let new_paths = find_paths(map, reachable_nines, candidate_pos);
-            possible_paths = possible_paths
-                .union(&new_paths)
-                .copied()
-                .collect::<HashSet<_>>();
+            for new_path in new_paths {
+                if !possible_paths.contains(&new_path) {
+                    possible_paths.push(new_path);
+                }
+            }
         }
     }
 
@@ -102,7 +106,7 @@ fn find_paths(map: &Map, reachable_nines: &mut Vec<HashSet<IVec2>>, pos: IVec2) 
 
 pub fn a(input: &str) -> i32 {
     let map = Map::new(input).ascii_digits_to_u8();
-    let mut reachable_nines = vec![HashSet::new(); (map.width * map.height) as usize];
+    let mut reachable_nines = vec![SmallVec::new(); (map.width * map.height) as usize];
 
     let mut sum_of_reachable = 0;
 
