@@ -5,17 +5,14 @@ pub static INPUT: &str = include_str!("../input/10.txt");
 pub static TEST_INPUT: &str = include_str!("../input/10_test.txt");
 
 #[derive(Clone)]
-struct Map<T>
-where
-    T: Copy + Clone + Default,
-{
-    data: Vec<T>,
+struct Map {
+    data: Vec<u8>,
     width: i32,
     height: i32,
 }
 
-impl Map<u8> {
-    fn new(input: &str) -> Map<u8> {
+impl Map {
+    fn new(input: &str) -> Map {
         let data = input.replace('\n', "").into_bytes();
 
         let mut width: i32 = 0;
@@ -33,20 +30,15 @@ impl Map<u8> {
         }
     }
 
-    fn ascii_digits_to_u8(mut self) -> Map<u8> {
+    fn ascii_digits_to_u8(mut self) -> Map {
         for value in self.data.iter_mut() {
             *value -= 48;
         }
 
         self
     }
-}
 
-impl<T> Map<T>
-where
-    T: Copy + Clone + Default,
-{
-    fn empty(width: i32, height: i32) -> Map<T> {
+    fn empty(width: i32, height: i32) -> Map {
         Map {
             data: vec![Default::default(); (width * height) as usize],
             width,
@@ -54,7 +46,7 @@ where
         }
     }
 
-    fn get(&self, pos: IVec2) -> T {
+    fn get(&self, pos: IVec2) -> u8 {
         let index = pos.x + pos.y * self.width;
 
         if pos.x < 0 || pos.x >= self.width {
@@ -68,7 +60,7 @@ where
         self.data[index as usize]
     }
 
-    fn set(&mut self, pos: IVec2, new: T) -> bool {
+    fn set(&mut self, pos: IVec2, new: u8) -> bool {
         let index = pos.x + pos.y * self.width;
 
         if pos.x < 0 || pos.x >= self.width {
@@ -85,7 +77,7 @@ where
     }
 }
 
-impl Display for Map<u8> {
+impl Display for Map {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for line in self.data.chunks(self.width as usize) {
             writeln!(f, "{}", str::from_utf8(line).unwrap())?;
@@ -95,11 +87,15 @@ impl Display for Map<u8> {
     }
 }
 
-fn find_paths(map: &Map<u8>, reachable_nines: &mut Map<i32>, pos: IVec2) -> HashSet<IVec2> {
-    /*let cached = reachable_nines.get(pos);
-    if cached > 0 {
-        return cached;
-    }*/
+fn find_paths(map: &Map, reachable_nines: &mut Vec<HashSet<IVec2>>, pos: IVec2) -> HashSet<IVec2> {
+    {
+        let cached = reachable_nines
+            .get((pos.x + pos.y * map.width) as usize)
+            .unwrap();
+        if cached.len() > 0 {
+            return cached.clone();
+        }
+    }
 
     let value = map.get(pos);
     if value == 9 {
@@ -123,16 +119,14 @@ fn find_paths(map: &Map<u8>, reachable_nines: &mut Map<i32>, pos: IVec2) -> Hash
         }
     }
 
-    /*if cached == 0 {
-        reachable_nines.set(pos, possible_paths);
-    }*/
+    reachable_nines[(pos.x + pos.y * map.width) as usize] = possible_paths.clone();
 
     possible_paths
 }
 
 pub fn a(input: &str) -> i32 {
     let map = Map::new(input).ascii_digits_to_u8();
-    let mut reachable_nines = Map::empty(map.width, map.height);
+    let mut reachable_nines = vec![HashSet::new(); (map.width * map.height) as usize];
 
     let mut sum_of_reachable = 0;
 
