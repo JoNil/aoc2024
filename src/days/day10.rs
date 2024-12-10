@@ -143,9 +143,6 @@ pub fn a(input: &str) -> i32 {
 
             if val == 0 {
                 let nines_reachable = find_paths(&map, &mut reachable_nines, pos);
-
-                println!("{}", nines_reachable.len());
-
                 sum_of_reachable += nines_reachable.len() as i32;
             }
         }
