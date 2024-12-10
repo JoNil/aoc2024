@@ -38,14 +38,6 @@ impl Map {
         self
     }
 
-    fn empty(width: i32, height: i32) -> Map {
-        Map {
-            data: vec![Default::default(); (width * height) as usize],
-            width,
-            height,
-        }
-    }
-
     fn get(&self, pos: IVec2) -> u8 {
         let index = pos.x + pos.y * self.width;
 
@@ -58,22 +50,6 @@ impl Map {
         }
 
         self.data[index as usize]
-    }
-
-    fn set(&mut self, pos: IVec2, new: u8) -> bool {
-        let index = pos.x + pos.y * self.width;
-
-        if pos.x < 0 || pos.x >= self.width {
-            return false;
-        }
-
-        if pos.y < 0 || pos.y >= self.height {
-            return false;
-        }
-
-        self.data[index as usize] = new;
-
-        true
     }
 }
 
