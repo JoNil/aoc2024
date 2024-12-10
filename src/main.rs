@@ -19,6 +19,8 @@ where
 }
 
 fn main() {
+    let start = Instant::now();
+
     time(day01::a, day01::INPUT);
     time(day01::b, day01::INPUT);
 
@@ -45,4 +47,8 @@ fn main() {
 
     time(day09::a, day09::INPUT);
     time(day09::b, day09::INPUT);
+
+    let elapsed = start.elapsed();
+
+    println!("Total Time {} us", elapsed.as_micros());
 }
