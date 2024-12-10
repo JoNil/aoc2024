@@ -1,23 +1,28 @@
 pub static INPUT: &str = include_str!("../input/7.txt");
 pub static TEST_INPUT: &str = include_str!("../input/7_test.txt");
 
-fn is_solvable(answer: i64, result: i64, remaining_numbers: &[i64]) -> bool {
-    if remaining_numbers.is_empty() {
-        return result == answer;
+fn is_solvable(answer: i64, remaining_numbers: &[i64]) -> bool {
+    if remaining_numbers.len() == 1 {
+        return answer == remaining_numbers[0];
     }
 
-    let new_result = result + remaining_numbers[0];
-    if new_result <= answer {
-        let is_answer = is_solvable(answer, new_result, &remaining_numbers[1..]);
+    let last = remaining_numbers.len() - 1;
+    let number = remaining_numbers[last];
+    let rest = &remaining_numbers[..last];
+
+    let new_result = answer - number;
+    if new_result > 0 {
+        let is_answer = is_solvable(new_result, rest);
 
         if is_answer {
             return true;
         }
     }
 
-    let new_result = result * remaining_numbers[0];
-    if new_result <= answer {
-        let is_answer = is_solvable(answer, new_result, &remaining_numbers[1..]);
+    let divisible = answer % number == 0;
+    let new_result = answer / number;
+    if divisible {
+        let is_answer = is_solvable(new_result, rest);
 
         if is_answer {
             return true;
@@ -45,9 +50,9 @@ pub fn a(input: &str) -> i64 {
     let mut total_calibration_result = 0;
 
     for (answer, numbers) in equations {
-        if is_solvable(answer, numbers[0], &numbers[1..]) {
+        if is_solvable(answer, &numbers) {
             total_calibration_result += answer;
-        }
+        };
     }
 
     total_calibration_result
