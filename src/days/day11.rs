@@ -1,4 +1,5 @@
-use std::{collections::HashMap, mem};
+use fxhash::FxHashMap;
+use std::mem;
 
 pub static INPUT: &str = include_str!("../input/11.txt");
 pub static TEST_INPUT: &str = include_str!("../input/11_test.txt");
@@ -23,9 +24,9 @@ pub fn a(input: &str) -> i64 {
         .trim()
         .split(' ')
         .map(|n| (n.parse().unwrap(), 1))
-        .collect::<HashMap<i64, i64>>();
+        .collect::<FxHashMap<i64, i64>>();
 
-    let mut new_numbers = HashMap::new();
+    let mut new_numbers = FxHashMap::default();
 
     for _round in 0..25 {
         new_numbers.clear();
@@ -71,9 +72,9 @@ pub fn b(input: &str) -> i64 {
         .trim()
         .split(' ')
         .map(|n| (n.parse().unwrap(), 1))
-        .collect::<HashMap<i64, i64>>();
+        .collect::<FxHashMap<i64, i64>>();
 
-    let mut new_numbers = HashMap::new();
+    let mut new_numbers = FxHashMap::default();
 
     for _round in 0..75 {
         new_numbers.clear();
