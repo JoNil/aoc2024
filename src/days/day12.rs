@@ -1,5 +1,5 @@
 use glam::{ivec2, IVec2};
-use std::{collections::HashMap, iter};
+use std::collections::{HashMap, HashSet};
 
 pub static INPUT: &str = include_str!("../input/12.txt");
 pub static TEST_INPUT: &str = include_str!("../input/12_test.txt");
@@ -45,139 +45,37 @@ impl Map {
     }
 }
 
-#[derive(Debug)]
-struct Region {
-    min: IVec2,
-    max: IVec2,
-    positions: Vec<IVec2>,
-}
+fn flood(
+    processed_positions: &mut HashSet<IVec2>,
+    map: &Map,
+    region: &mut Vec<IVec2>,
+    p: IVec2,
+    c: u8,
+) {
+    if !processed_positions.contains(&p) && map.get(p) == c {
+        region.push(p);
+        processed_positions.insert(p);
 
-impl Region {
-    fn new(p: IVec2) -> Region {
-        Region {
-            min: p,
-            max: p,
-            positions: vec![p],
+        for dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
+            flood(processed_positions, map, region, p + dir, c);
         }
-    }
-
-    fn touches(&self, p: IVec2) -> bool {
-        let touches_bb = p.x >= self.min.x - 1
-            && p.x <= self.max.x + 1
-            && p.y >= self.min.y - 1
-            && p.y <= self.max.y + 1;
-
-        if touches_bb {
-            for pos in &self.positions {
-                let diff = (pos - p).abs();
-                if diff == ivec2(1, 0) || diff == ivec2(0, 1) {
-                    return true;
-                }
-            }
-        }
-
-        false
-    }
-
-    fn insert(&mut self, p: IVec2) {
-        //assert!(self.touches(p));
-        self.min = self.min.min(p);
-        self.max = self.max.max(p);
-        self.positions.push(p);
-    }
-}
-
-#[test]
-fn test_touches() {
-    {
-        let region = Region::new(ivec2(3, 0));
-        assert!(region.touches(ivec2(2, 0)));
-        assert!(region.touches(ivec2(4, 0)));
-
-        assert!(!region.touches(ivec2(1, 0)));
-        assert!(!region.touches(ivec2(5, 0)));
-    }
-
-    {
-        let region = Region::new(ivec2(0, 3));
-        assert!(region.touches(ivec2(0, 2)));
-        assert!(region.touches(ivec2(0, 4)));
-
-        assert!(!region.touches(ivec2(0, 1)));
-        assert!(!region.touches(ivec2(0, 5)));
-    }
-
-    {
-        let mut region = Region::new(ivec2(3, 2));
-        region.insert(ivec2(2, 3));
-        region.insert(ivec2(3, 3));
-
-        assert!(region.touches(ivec2(2, 2)));
-        assert!(region.touches(ivec2(4, 2)));
-
-        assert!(!region.touches(ivec2(0, 1)));
-        assert!(!region.touches(ivec2(0, 5)));
     }
 }
 
 pub fn a(input: &str) -> i32 {
     let map = Map::new(input);
-    let mut regions = HashMap::<u8, Vec<Region>>::new();
+    let mut processed_positions = HashSet::new();
+    let mut regions = HashMap::<u8, Vec<Vec<IVec2>>>::new();
 
     for y in 0..map.height {
         for x in 0..map.width {
             let p = ivec2(x, y);
             let c = map.get(p);
 
-            let regions = regions.entry(c).or_default();
-            let mut touches = Vec::new();
-
-            for (i, region) in regions.iter().enumerate() {
-                if region.touches(p) {
-                    touches.push(i);
-                }
-            }
-
-            if touches.is_empty() {
-                regions.push(Region::new(p));
-            } else if touches.len() == 1 {
-                regions[touches[0]].insert(p);
-            } else {
-                let mut main = None;
-                let mut rest = Vec::new();
-                let mut untouched = Vec::new();
-
-                for (index, region) in regions.drain(..).enumerate() {
-                    if touches.contains(&index) {
-                        if main.is_none() {
-                            main = Some(region);
-                        } else {
-                            rest.push(region);
-                        }
-                    } else {
-                        untouched.push(region);
-                    }
-                }
-
-                for region in rest {
-                    for pos in region.positions {
-                        main.as_mut().unwrap().insert(pos);
-                    }
-                }
-
-                *regions = iter::once(main.unwrap())
-                    .chain(untouched.drain(..))
-                    .collect();
-
-                for region in regions {
-                    for p in &region.positions {
-                        if !region.touches(*p) {
-                            eprintln!("{}", c as char);
-                            eprintln!("{region:?}");
-                            panic!("Blä");
-                        }
-                    }
-                }
+            if !processed_positions.contains(&p) {
+                let mut region = Vec::new();
+                flood(&mut processed_positions, &map, &mut region, p, c);
+                regions.entry(c).or_default().push(region);
             }
         }
     }
@@ -186,10 +84,10 @@ pub fn a(input: &str) -> i32 {
 
     for (label, regions) in &regions {
         for region in regions {
-            let area = region.positions.len();
+            let area = region.len();
             let mut border = 0;
 
-            for pos in &region.positions {
+            for pos in region {
                 for dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
                     if map.get(pos + dir) != *label {
                         border += 1;
@@ -198,8 +96,6 @@ pub fn a(input: &str) -> i32 {
             }
 
             price += area * border;
-
-            println!("{} {area} * {border} = {}", *label as char, area * border);
         }
     }
 
@@ -209,7 +105,7 @@ pub fn a(input: &str) -> i32 {
 #[test]
 fn test_a() {
     assert_eq!(a(TEST_INPUT), 1930);
-    //assert_eq!(a(INPUT), 0);
+    assert_eq!(a(INPUT), 1431316);
 }
 
 pub fn b(input: &str) -> i32 {
