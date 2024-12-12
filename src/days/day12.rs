@@ -1,5 +1,5 @@
 use glam::{ivec2, IVec2};
-use std::{collections::HashMap, fmt::Display, str};
+use std::{collections::HashMap, str};
 
 pub static INPUT: &str = include_str!("../input/12.txt");
 pub static TEST_INPUT: &str = include_str!("../input/12_test.txt");
@@ -120,16 +120,6 @@ impl Map {
     }
 }
 
-impl Display for Map {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for line in self.data.chunks(self.width as usize) {
-            writeln!(f, "{}", str::from_utf8(line).unwrap())?;
-        }
-
-        Ok(())
-    }
-}
-
 fn flood(processed_positions: &mut Map, map: &Map, region: &mut Vec<IVec2>, p: IVec2, c: u8) {
     if processed_positions.get(p) == b'.' && map.get(p) == c {
         region.push(p);
@@ -230,15 +220,6 @@ impl Dir {
             Dir::Right => Dir::Up,
         }
     }
-
-    fn symbol(&self) -> u8 {
-        match self {
-            Dir::Up => b'^',
-            Dir::Down => b'v',
-            Dir::Left => b'<',
-            Dir::Right => b'>',
-        }
-    }
 }
 
 pub fn b(input: &str) -> i32 {
@@ -269,7 +250,6 @@ pub fn b(input: &str) -> i32 {
     let mut price = 0;
 
     for (label, region) in &regions {
-
         let mut region_map = Map::empty(map.width, map.height);
 
         for pice in region {
@@ -298,7 +278,6 @@ pub fn b(input: &str) -> i32 {
         let mut contained_in_other = true;
 
         loop {
-            region_map.set(pos, dir.symbol());
             if region_index_map.get(pos) != start_index {
                 contained_in_other = false;
             }
