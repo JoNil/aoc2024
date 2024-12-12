@@ -109,11 +109,53 @@ fn test_a() {
 }
 
 pub fn b(input: &str) -> i32 {
-    0
+    let map = Map::new(input);
+    let mut processed_positions = HashSet::new();
+    let mut regions = HashMap::<u8, Vec<Vec<IVec2>>>::new();
+
+    for y in 0..map.height {
+        for x in 0..map.width {
+            let p = ivec2(x, y);
+            let c = map.get(p);
+
+            if !processed_positions.contains(&p) {
+                let mut region = Vec::new();
+                flood(&mut processed_positions, &map, &mut region, p, c);
+                regions.entry(c).or_default().push(region);
+            }
+        }
+    }
+
+    let mut price = 0;
+
+    for (label, regions) in &regions {
+        for region in regions {
+            let area = region.len();
+            let mut border = 0;
+
+            let region_pices = region.iter().copied().collect::<HashSet<_>>();
+
+            let mut borderpices = Vec::new();
+
+            for pice in region {
+                let mut neighbour_count = 0;
+
+                for dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
+                    if map.get(*pice + dir) == *label {
+                        neighbour_count += 1;
+                    }
+                }
+            }
+
+            price += area * border;
+        }
+    }
+
+    price as i32
 }
 
 #[test]
 fn test_b() {
-    assert_eq!(b(TEST_INPUT), 0);
+    assert_eq!(b(TEST_INPUT), 1260);
     assert_eq!(b(INPUT), 0);
 }
