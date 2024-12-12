@@ -3,6 +3,10 @@ use std::{collections::HashMap, fmt::Display, str};
 
 pub static INPUT: &str = include_str!("../input/12.txt");
 pub static TEST_INPUT: &str = include_str!("../input/12_test.txt");
+pub static TEST_INPUT_2: &str = include_str!("../input/12_test_2.txt");
+pub static TEST_INPUT_3: &str = include_str!("../input/12_test_3.txt");
+pub static TEST_INPUT_4: &str = include_str!("../input/12_test_4.txt");
+pub static TEST_INPUT_5: &str = include_str!("../input/12_test_5.txt");
 
 #[derive(Clone)]
 struct Map {
@@ -144,7 +148,7 @@ enum Dir {
 }
 
 impl Dir {
-    fn fwd(self) -> IVec2 {
+    fn fwd(&self) -> IVec2 {
         match self {
             Dir::Up => ivec2(0, -1),
             Dir::Down => ivec2(0, 1),
@@ -153,12 +157,39 @@ impl Dir {
         }
     }
 
-    fn right(self) -> IVec2 {
+    fn right(&self) -> IVec2 {
         match self {
             Dir::Up => ivec2(1, 0),
             Dir::Down => ivec2(-1, 0),
-            Dir::Left => ivec2(0, 1),
-            Dir::Right => ivec2(0, -1),
+            Dir::Left => ivec2(0, -1),
+            Dir::Right => ivec2(0, 1),
+        }
+    }
+
+    fn turn_right(self) -> Dir {
+        match self {
+            Dir::Up => Dir::Right,
+            Dir::Down => Dir::Left,
+            Dir::Left => Dir::Up,
+            Dir::Right => Dir::Down,
+        }
+    }
+
+    fn turn_left(self) -> Dir {
+        match self {
+            Dir::Up => Dir::Left,
+            Dir::Down => Dir::Right,
+            Dir::Left => Dir::Down,
+            Dir::Right => Dir::Up,
+        }
+    }
+
+    fn symbol(&self) -> u8 {
+        match self {
+            Dir::Up => b'^',
+            Dir::Down => b'v',
+            Dir::Left => b'<',
+            Dir::Right => b'>',
         }
     }
 }
@@ -184,36 +215,57 @@ pub fn b(input: &str) -> i32 {
     let mut price = 0;
 
     for (label, regions) in &regions {
+        println!("{}, {}", *label as char, regions.len());
+
         for region in regions {
+            let mut region_map = Map::empty(map.width, map.height);
+
+            for pice in region {
+                region_map.set(*pice, *label);
+            }
+
+            //println!("{}", region_map);
+
             let area = region.len();
             let mut border = 0;
 
-            let mut borderpices = Vec::new();
-
-            for pice in region {
-                let mut neighbour_count = 0;
-
-                for dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
-                    if map.get(*pice + dir) == *label {
-                        neighbour_count += 1;
+            let start = {
+                let mut min_x = map.width;
+                let mut min_y = 0;
+                for p in region {
+                    if p.x < min_x {
+                        min_x = p.x;
+                        min_y = p.y;
                     }
                 }
+                ivec2(min_x - 1, min_y)
+            };
 
-                if neighbour_count != 4 {
-                    borderpices.push(pice);
+            let mut pos = start;
+            let mut dir = Dir::Up;
+
+            loop {
+                region_map.set(pos, dir.symbol());
+
+                if region_map.get(pos + dir.fwd()) == *label {
+                    dir = dir.turn_left();
+                    border += 1;
+                } else if region_map.get(pos + dir.fwd() + dir.right()) == *label {
+                    pos += dir.fwd();
+                } else {
+                    pos += dir.fwd() + dir.right();
+                    dir = dir.turn_right();
+                    border += 1;
+                }
+
+                if pos == start {
+                    break;
                 }
             }
 
             price += area * border;
 
-            let mut border_map = Map::empty(map.width, map.height);
-
-            for pice in borderpices {
-                border_map.set(*pice, *label);
-            }
-
-            println!("{}", map);
-            println!("{}", border_map);
+            //println!("{}", region_map);
         }
     }
 
@@ -223,5 +275,9 @@ pub fn b(input: &str) -> i32 {
 #[test]
 fn test_b() {
     assert_eq!(b(TEST_INPUT), 1206);
-    assert_eq!(b(INPUT), 0);
+    assert_eq!(b(TEST_INPUT_2), 80);
+    assert_eq!(b(TEST_INPUT_3), 236);
+    //assert_eq!(b(TEST_INPUT_4), 368);
+    assert_eq!(b(TEST_INPUT_5), 436);
+    //assert_eq!(b(INPUT), 786362);
 }
