@@ -1,47 +1,45 @@
-use parse_display::{Display, FromStr};
+use glam::IVec2;
 
 pub static INPUT: &str = include_str!("../input/13.txt");
 pub static TEST_INPUT: &str = include_str!("../input/13_test.txt");
 
-#[derive(Display, FromStr, PartialEq, Debug)]
-#[display("Button A: X+{x}, Y+{y}")]
-struct ButtonA {
-    x: i32,
-    y: i32,
-}
-
-#[derive(Display, FromStr, PartialEq, Debug)]
-#[display("Button B: X+{x}, Y+{y}")]
-struct ButtonB {
-    x: i32,
-    y: i32,
-}
-
-#[derive(Display, FromStr, PartialEq, Debug)]
-#[display("Prize: X={x}, Y={y}")]
-struct Prize {
-    x: i32,
-    y: i32,
-}
-
-#[derive(Display, FromStr, PartialEq, Debug)]
-#[display("{a}\n{b}\n{p}")]
+#[derive(Default)]
 struct Machine {
-    a: ButtonA,
-    b: ButtonB,
-    p: Prize,
+    a: IVec2,
+    b: IVec2,
+    p: IVec2,
 }
 
 pub fn a(input: &str) -> i32 {
-    let machines = input
-        .trim()
-        .split("\n\n")
-        .map(|s| s.parse::<Machine>().unwrap())
-        .collect::<Vec<_>>();
-
     let mut minimum_tokens = 0;
 
-    for machine in machines {
+    for machine_str in input.trim().split("\n\n") {
+        let mut machine = Machine::default();
+
+        let (line1, rest) = machine_str.split_once('\n').unwrap();
+        let (line2, line3) = rest.split_once('\n').unwrap();
+
+        {
+            let (left, right) = line1.split_once(',').unwrap();
+
+            machine.a.x = left.trim_start_matches("Button A: X+").parse().unwrap();
+            machine.a.y = right.trim_start_matches(" Y+").parse().unwrap();
+        }
+
+        {
+            let (left, right) = line2.split_once(',').unwrap();
+
+            machine.b.x = left.trim_start_matches("Button B: X+").parse().unwrap();
+            machine.b.y = right.trim_start_matches(" Y+").parse().unwrap();
+        }
+
+        {
+            let (left, right) = line3.split_once(',').unwrap();
+
+            machine.p.x = left.trim_start_matches("Prize: X=").parse().unwrap();
+            machine.p.y = right.trim_start_matches(" Y=").parse().unwrap();
+        }
+
         let x = (machine.a.x, machine.b.x, machine.p.x);
         let y = (machine.a.y, machine.b.y, machine.p.y);
 
@@ -73,15 +71,35 @@ fn test_a() {
 }
 
 pub fn b(input: &str) -> i64 {
-    let machines = input
-        .trim()
-        .split("\n\n")
-        .map(|s| s.parse::<Machine>().unwrap())
-        .collect::<Vec<_>>();
-
     let mut minimum_tokens = 0;
 
-    for machine in machines {
+    for machine_str in input.trim().split("\n\n") {
+        let mut machine = Machine::default();
+
+        let (line1, rest) = machine_str.split_once('\n').unwrap();
+        let (line2, line3) = rest.split_once('\n').unwrap();
+
+        {
+            let (left, right) = line1.split_once(',').unwrap();
+
+            machine.a.x = left.trim_start_matches("Button A: X+").parse().unwrap();
+            machine.a.y = right.trim_start_matches(" Y+").parse().unwrap();
+        }
+
+        {
+            let (left, right) = line2.split_once(',').unwrap();
+
+            machine.b.x = left.trim_start_matches("Button B: X+").parse().unwrap();
+            machine.b.y = right.trim_start_matches(" Y+").parse().unwrap();
+        }
+
+        {
+            let (left, right) = line3.split_once(',').unwrap();
+
+            machine.p.x = left.trim_start_matches("Prize: X=").parse().unwrap();
+            machine.p.y = right.trim_start_matches(" Y=").parse().unwrap();
+        }
+
         let x = (
             machine.a.x as i64,
             machine.b.x as i64,

@@ -9,7 +9,6 @@ edition = "2021"
 bit-vec = "0.8"
 fxhash = "0.2"
 glam = "0.29"
-parse-display = "0.10"
 smallvec = "1.13"
 
 [profile.release]
