@@ -68,6 +68,7 @@ fn test_a() {
     assert_eq!(a(INPUT), 6384282079460);
 }
 
+#[allow(clippy::mut_range_bound)]
 pub fn b(input: &str) -> i64 {
     let mut blocks = VecDeque::with_capacity(input.len());
 

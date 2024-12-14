@@ -1,6 +1,7 @@
 use std::{any::type_name, fmt::Display, time::Instant};
 
 use aoc2024::*;
+use glam::ivec2;
 
 fn time<F, N>(f: F, input: &str)
 where
@@ -60,8 +61,8 @@ fn main() {
     time(day13::a, day13::INPUT);
     time(day13::b, day13::INPUT);
 
-    time(day14::a, day14::INPUT);
-    time(day14::b, day14::INPUT);
+    time(|input| day14::a(input, ivec2(101, 103)), day14::INPUT);
+    time(|input| day14::b(input, ivec2(101, 103)), day14::INPUT);
 
     let elapsed = start.elapsed();
 
