@@ -1,5 +1,5 @@
 use glam::IVec2;
-use std::{mem, str};
+use std::str;
 
 pub static INPUT: &str = include_str!("../input/14.txt");
 pub static TEST_INPUT: &str = include_str!("../input/14_test.txt");
@@ -111,7 +111,6 @@ pub fn b(input: &str, size: IVec2) -> i32 {
     let mut robots = Robots::default();
 
     let mut map = Map::empty(size.x, size.y);
-    let mut map2 = Map::empty(size.x, size.y);
 
     for line in input.lines() {
         let (left, right) = line.split_once(' ').unwrap();
@@ -137,14 +136,11 @@ pub fn b(input: &str, size: IVec2) -> i32 {
     loop {
         step += 1;
 
-        let mut conflict_count = 0;
+        let mut conflict = false;
+
+        map.data.fill(0);
 
         for i in 0..robots.pos_x.len() {
-            let x = robots.pos_x[i];
-            let y = robots.pos_y[i];
-
-            map2.modify(x, y, -1);
-
             let new_x =
                 (robots.pos_x[i] as i16 + robots.speed_x[i] as i16).rem_euclid(size.x as _) as i8;
             let new_y =
@@ -153,16 +149,14 @@ pub fn b(input: &str, size: IVec2) -> i32 {
             let robots_in_pos = map.modify(new_x, new_y, 1);
 
             if robots_in_pos > 1 {
-                conflict_count += 1;
+                conflict = true;
             }
 
             robots.pos_x[i] = new_x;
             robots.pos_y[i] = new_y;
         }
 
-        mem::swap(&mut map, &mut map2);
-
-        if conflict_count == 0 {
+        if !conflict {
             break;
         }
     }
