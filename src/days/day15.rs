@@ -4,6 +4,7 @@ use glam::{ivec2, IVec2};
 
 pub static INPUT: &str = include_str!("../input/15.txt");
 pub static TEST_INPUT: &str = include_str!("../input/15_test.txt");
+pub static TEST_INPUT_2: &str = include_str!("../input/15_test_2.txt");
 
 struct Map {
     data: Vec<u8>,
@@ -25,14 +26,6 @@ impl Map {
 
         Map {
             data,
-            width,
-            height,
-        }
-    }
-
-    fn empty(width: i32, height: i32) -> Map {
-        Map {
-            data: vec![b'.'; (width * height) as usize],
             width,
             height,
         }
@@ -107,8 +100,12 @@ fn resolve_collision(map: &mut Map, pos: IVec2, dir: IVec2, payload: bool) -> bo
     } else if v == b'O' {
         let next_ok = resolve_collision(map, pos + dir, dir, true);
 
-        if next_ok && payload {
-            map.set(pos, b'O');
+        if next_ok {
+            if payload {
+                map.set(pos, b'O');
+            } else {
+                map.set(pos, b'.');
+            }
         }
 
         next_ok
@@ -134,7 +131,6 @@ pub fn a(input: &str) -> i32 {
         };
 
         let new_pos = pos + dir;
-
         let ok_move = resolve_collision(&mut map, new_pos, dir, false);
 
         if ok_move {
@@ -157,8 +153,9 @@ pub fn a(input: &str) -> i32 {
 
 #[test]
 fn test_a() {
+    assert_eq!(a(TEST_INPUT_2), 2028);
     assert_eq!(a(TEST_INPUT), 10092);
-    assert_eq!(a(INPUT), 0);
+    assert_eq!(a(INPUT), 1509074);
 }
 
 pub fn b(input: &str) -> i32 {
@@ -167,6 +164,6 @@ pub fn b(input: &str) -> i32 {
 
 #[test]
 fn test_b() {
-    assert_eq!(b(TEST_INPUT), 0);
+    assert_eq!(b(TEST_INPUT), 9021);
     assert_eq!(b(INPUT), 0);
 }

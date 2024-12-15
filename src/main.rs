@@ -64,8 +64,8 @@ fn main() {
     time(|input| day14::a(input, ivec2(101, 103)), day14::INPUT);
     time(|input| day14::b(input, ivec2(101, 103)), day14::INPUT);
 
-    time(day13::a, day15::INPUT);
-    time(day13::b, day15::INPUT);
+    time(day15::a, day15::INPUT);
+    time(day15::b, day15::INPUT);
 
     let elapsed = start.elapsed();
 
