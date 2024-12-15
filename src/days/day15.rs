@@ -31,6 +31,14 @@ impl Map {
         }
     }
 
+    fn empty(width: i32, height: i32) -> Map {
+        Map {
+            data: vec![b'.'; (width * height) as usize],
+            width,
+            height,
+        }
+    }
+
     fn get(&self, pos: IVec2) -> u8 {
         let index = pos.x + pos.y * self.width;
 
@@ -90,27 +98,28 @@ impl Display for Map {
 fn resolve_collision(map: &mut Map, pos: IVec2, dir: IVec2, payload: bool) -> bool {
     let v = map.get(pos);
 
-    if v == b'#' {
-        false
-    } else if v == b'.' {
-        if payload {
-            map.set(pos, b'O');
-        }
-        true
-    } else if v == b'O' {
-        let next_ok = resolve_collision(map, pos + dir, dir, true);
-
-        if next_ok {
+    match v {
+        b'#' => false,
+        b'.' => {
             if payload {
                 map.set(pos, b'O');
-            } else {
-                map.set(pos, b'.');
             }
+            true
         }
+        b'O' => {
+            let next_ok = resolve_collision(map, pos + dir, dir, true);
 
-        next_ok
-    } else {
-        panic!("What");
+            if next_ok {
+                if payload {
+                    map.set(pos, b'O');
+                } else {
+                    map.set(pos, b'.');
+                }
+            }
+
+            next_ok
+        }
+        _ => panic!("Bad map char"),
     }
 }
 
@@ -158,8 +167,91 @@ fn test_a() {
     assert_eq!(a(INPUT), 1509074);
 }
 
+fn resolve_collision_b(map: &mut Map, pos: IVec2, dir: IVec2, payload: bool) -> bool {
+    let v = map.get(pos);
+
+    match v {
+        b'#' => false,
+        b'.' => {
+            if payload {
+                map.set(pos, b'O');
+            }
+            true
+        }
+        b'O' => {
+            let next_ok = resolve_collision(map, pos + dir, dir, true);
+
+            if next_ok {
+                if payload {
+                    map.set(pos, b'O');
+                } else {
+                    map.set(pos, b'.');
+                }
+            }
+
+            next_ok
+        }
+        _ => panic!("Bad map char"),
+    }
+}
+
 pub fn b(input: &str) -> i32 {
-    0
+    let (map, instructions) = input.split_once("\n\n").unwrap();
+    let original_map = Map::new(map);
+
+    let mut map = Map::empty(original_map.width * 2, original_map.height);
+
+    let mut pos = ivec2(0, 0);
+
+    for y in 0..original_map.height {
+        for x in 0..original_map.height {
+            let v = original_map.get(ivec2(x, y));
+
+            match v {
+                b'#' => {
+                    map.set(ivec2(2 * x, y), b'#');
+                    map.set(ivec2(2 * x + 1, y), b'#');
+                }
+                b'O' => {
+                    map.set(ivec2(2 * x, y), b'[');
+                    map.set(ivec2(2 * x + 1, y), b']');
+                }
+                b'@' => pos = ivec2(2 * x, y),
+                _ => continue,
+            }
+        }
+    }
+
+    println!("{}", map);
+
+    for instruction in instructions.as_bytes() {
+        let dir = match *instruction {
+            b'<' => ivec2(-1, 0),
+            b'>' => ivec2(1, 0),
+            b'^' => ivec2(0, -1),
+            b'v' => ivec2(0, 1),
+            _ => continue,
+        };
+
+        let new_pos = pos + dir;
+        let ok_move = resolve_collision_b(&mut map, new_pos, dir, false);
+
+        if ok_move {
+            pos = new_pos;
+        }
+    }
+
+    let mut score = 0;
+
+    for y in 0..map.height {
+        for x in 0..map.width {
+            if map.get(ivec2(x, y)) == b'O' {
+                score += 100 * y + x;
+            }
+        }
+    }
+
+    score
 }
 
 #[test]
