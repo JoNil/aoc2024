@@ -440,8 +440,12 @@ pub fn b(input: &str) -> i32 {
             }
 
             let tentative_g_score = g_score.get(current) + step_cost;
-            if tentative_g_score <= g_score.get(neighbor) {
+            let neighbor_g_score = g_score.get(neighbor);
+            if tentative_g_score <= neighbor_g_score {
                 let came_from = came_from.get_mut(neighbor);
+                if tentative_g_score < neighbor_g_score {
+                    came_from.clear();
+                }
                 came_from.push(current);
 
                 g_score.set(neighbor, tentative_g_score);
@@ -461,5 +465,5 @@ pub fn b(input: &str) -> i32 {
 fn test_b() {
     assert_eq!(b(TEST_INPUT), 45);
     assert_eq!(b(TEST_INPUT_2), 64);
-    assert_eq!(b(INPUT), 0);
+    assert_eq!(b(INPUT), 481);
 }
