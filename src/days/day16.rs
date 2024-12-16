@@ -391,8 +391,6 @@ fn count_path(mut map: Map<u8>, came_from: &mut CameFrom, current: Pos, start: P
         }
     }
 
-    println!("{map}");
-
     steps
 }
 
