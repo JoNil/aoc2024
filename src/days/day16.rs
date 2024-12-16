@@ -5,7 +5,7 @@ pub static INPUT: &str = include_str!("../input/16.txt");
 pub static TEST_INPUT: &str = include_str!("../input/16_test.txt");
 pub static TEST_INPUT_2: &str = include_str!("../input/16_test_2.txt");
 
-trait MapDefault {
+pub trait MapDefault {
     fn map_default() -> Self;
 }
 
@@ -27,7 +27,8 @@ impl MapDefault for IVec2 {
     }
 }
 
-struct Map<T>
+#[derive(Clone)]
+pub struct Map<T>
 where
     T: Copy + Clone + MapDefault,
 {
@@ -40,7 +41,7 @@ impl<T> Map<T>
 where
     T: Copy + Clone + MapDefault,
 {
-    fn empty(width: i32, height: i32, initial: T) -> Map<T> {
+    pub fn empty(width: i32, height: i32, initial: T) -> Map<T> {
         Map {
             data: vec![initial; (width * height) as usize],
             width,
@@ -48,7 +49,7 @@ where
         }
     }
 
-    fn get(&self, pos: IVec2) -> T {
+    pub fn get(&self, pos: IVec2) -> T {
         let index = pos.x + pos.y * self.width;
 
         if pos.x < 0 || pos.x >= self.width {
@@ -62,7 +63,7 @@ where
         self.data[index as usize]
     }
 
-    fn set(&mut self, pos: IVec2, new: T) -> bool {
+    pub fn set(&mut self, pos: IVec2, new: T) -> bool {
         let index = pos.x + pos.y * self.width;
 
         if pos.x < 0 || pos.x >= self.width {
@@ -80,7 +81,7 @@ where
 }
 
 impl Map<u8> {
-    fn new(input: &str) -> Map<u8> {
+    pub fn new(input: &str) -> Map<u8> {
         let data = input.replace('\n', "").into_bytes();
 
         let mut width: i32 = 0;
@@ -98,7 +99,7 @@ impl Map<u8> {
         }
     }
 
-    fn find_first(&self, needle: u8) -> Option<IVec2> {
+    pub fn find_first(&self, needle: u8) -> Option<IVec2> {
         for y in 0..self.height {
             for x in 0..self.width {
                 let pos = ivec2(x, y);
@@ -326,15 +327,91 @@ pub fn a(input: &str) -> i32 {
 fn test_a() {
     assert_eq!(a(TEST_INPUT), 7036);
     assert_eq!(a(TEST_INPUT_2), 11048);
-    assert_eq!(a(INPUT), 0);
+    assert_eq!(a(INPUT), 94436);
+}
+
+fn count_path(mut map: Map<u8>, came_from: &PosMap<Pos>, mut current: Pos, start: Pos) -> i32 {
+    let mut steps = 0;
+
+    let mut current_pos = current.pos;
+
+    while current != start {
+        println!("{current:?}");
+        map.set(current.pos, b'O');
+        current = came_from.get(current);
+        if current_pos != current.pos {
+            steps += 1;
+        }
+        current_pos = current.pos;
+    }
+
+    println!("{map}");
+
+    steps
 }
 
 pub fn b(input: &str) -> i32 {
-    0
+    let mut map = Map::new(input);
+
+    let start = map.find_first(b'S').unwrap();
+    let end = map.find_first(b'E').unwrap();
+
+    map.set(start, b'.');
+    map.set(end, b'.');
+
+    let start = Pos {
+        pos: start,
+        dir: Dir::Right,
+    };
+
+    let mut g_score = PosMap::<u32>::empty(map.width, map.height, u32::MAX);
+    g_score.set(start, 0);
+
+    let mut f_score = PosMap::<u32>::empty(map.width, map.height, u32::MAX);
+    f_score.set(start, manhattan(start.pos, end));
+
+    let mut open_set = Vec::new();
+    open_set.push(start);
+
+    let mut came_from = PosMap::<Pos>::empty(map.width, map.width, Pos::default());
+
+    while !open_set.is_empty() {
+        open_set.sort_by_key(|p| cmp::Reverse(f_score.get(*p)));
+
+        let current = open_set.pop().unwrap();
+
+        if current.pos == end {
+            return count_path(map.clone(), &came_from, current, start);
+        }
+
+        for (neighbor, step_cost) in [
+            (Pos::new(current.pos + current.dir.fwd(), current.dir), 1),
+            (Pos::new(current.pos, current.dir.turn_left()), 1000),
+            (Pos::new(current.pos, current.dir.turn_right()), 1000),
+        ] {
+            if map.get(neighbor.pos) == b'#' {
+                continue;
+            }
+
+            let tentative_g_score = g_score.get(current) + step_cost;
+            if tentative_g_score < g_score.get(neighbor) {
+                came_from.set(neighbor, current);
+                g_score.set(neighbor, tentative_g_score);
+                f_score.set(neighbor, tentative_g_score + manhattan(neighbor.pos, end));
+
+                if !open_set.contains(&neighbor) {
+                    open_set.push(neighbor);
+                }
+            }
+        }
+    }
+
+    panic!("No path");
 }
 
 #[test]
 fn test_b() {
-    assert_eq!(b(TEST_INPUT), 0);
+    assert_eq!(b(TEST_INPUT), 45);
+    assert_eq!(b(TEST_INPUT), 64);
     assert_eq!(b(INPUT), 0);
 }
