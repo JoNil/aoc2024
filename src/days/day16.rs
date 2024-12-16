@@ -1,4 +1,3 @@
-use crossterm::cursor;
 use glam::{ivec2, IVec2};
 use std::{cmp, fmt::Display, str};
 
