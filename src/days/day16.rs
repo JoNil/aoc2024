@@ -9,6 +9,12 @@ pub trait MapDefault {
     fn map_default() -> Self;
 }
 
+impl MapDefault for bool {
+    fn map_default() -> Self {
+        false
+    }
+}
+
 impl MapDefault for u8 {
     fn map_default() -> Self {
         b'.'
@@ -298,6 +304,8 @@ pub fn a(input: &str) -> i32 {
     map.set(start, b'.');
     map.set(end, b'.');
 
+    let mut has_visited = PosMap::<bool>::empty(map.width, map.height, false);
+
     let start_cost = manhattan(start, end);
     let start = Pos {
         pos: start,
@@ -317,6 +325,12 @@ pub fn a(input: &str) -> i32 {
     });
 
     while let Some(Cost { pos: current, .. }) = open_set.pop() {
+        if has_visited.get(current) {
+            continue;
+        }
+
+        has_visited.set(current, true);
+
         if current.pos == end {
             return g_score.get(current) as i32;
         }
@@ -431,26 +445,33 @@ pub fn b(input: &str) -> i32 {
     map.set(start, b'.');
     map.set(end, b'.');
 
+    let mut has_visited = PosMap::<bool>::empty(map.width, map.height, false);
+
+    let start_cost = manhattan(start, end);
     let start = Pos {
         pos: start,
         dir: Dir::Right,
     };
-
     let mut g_score = PosMap::<u32>::empty(map.width, map.height, u32::MAX);
     g_score.set(start, 0);
 
     let mut f_score = PosMap::<u32>::empty(map.width, map.height, u32::MAX);
-    f_score.set(start, manhattan(start.pos, end));
+    f_score.set(start, start_cost);
 
-    let mut open_set = Vec::new();
-    open_set.push(start);
+    let mut open_set = BinaryHeap::new();
+    open_set.push(Cost {
+        pos: start,
+        cost: start_cost,
+    });
 
     let mut came_from = CameFrom::empty(map.width, map.width);
 
-    while !open_set.is_empty() {
-        open_set.sort_by_key(|p| cmp::Reverse(f_score.get(*p)));
+    while let Some(Cost { pos: current, .. }) = open_set.pop() {
+        if has_visited.get(current) {
+            continue;
+        }
 
-        let current = open_set.pop().unwrap();
+        has_visited.set(current, true);
 
         if current.pos == end {
             return count_path(map.clone(), &mut came_from, current, start);
@@ -474,12 +495,15 @@ pub fn b(input: &str) -> i32 {
                 }
                 came_from.push(current);
 
-                g_score.set(neighbor, tentative_g_score);
-                f_score.set(neighbor, tentative_g_score + manhattan(neighbor.pos, end));
+                let neighbor_f_score = tentative_g_score + manhattan(neighbor.pos, end);
 
-                if !open_set.contains(&neighbor) {
-                    open_set.push(neighbor);
-                }
+                g_score.set(neighbor, tentative_g_score);
+                f_score.set(neighbor, neighbor_f_score);
+
+                open_set.push(Cost {
+                    pos: neighbor,
+                    cost: neighbor_f_score,
+                });
             }
         }
     }
