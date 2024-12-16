@@ -124,7 +124,7 @@ impl Display for Map<u8> {
     }
 }
 
-#[derive(Copy, Clone, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Default, PartialEq, Eq, Debug)]
 enum Dir {
     #[default]
     Up,
@@ -166,7 +166,7 @@ fn manhattan(a: IVec2, b: IVec2) -> u32 {
     (a.x - b.x).unsigned_abs() + (a.y - b.y).unsigned_abs()
 }
 
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
 struct Pos {
     pos: IVec2,
     dir: Dir,
@@ -302,6 +302,10 @@ pub fn a(input: &str) -> i32 {
             (Pos::new(current.pos, current.dir.turn_left()), 1000),
             (Pos::new(current.pos, current.dir.turn_right()), 1000),
         ] {
+            if map.get(neighbor.pos) == b'#' {
+                continue;
+            }
+
             let tentative_g_score = g_score.get(current) + step_cost;
             if tentative_g_score < g_score.get(neighbor) {
                 came_from.set(neighbor, current);
