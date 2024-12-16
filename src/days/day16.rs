@@ -304,8 +304,6 @@ pub fn a(input: &str) -> i32 {
     map.set(start, b'.');
     map.set(end, b'.');
 
-    let mut has_visited = PosMap::<bool>::empty(map.width, map.height, false);
-
     let start_cost = manhattan(start, end);
     let start = Pos {
         pos: start,
@@ -325,12 +323,6 @@ pub fn a(input: &str) -> i32 {
     });
 
     while let Some(Cost { pos: current, .. }) = open_set.pop() {
-        if has_visited.get(current) {
-            continue;
-        }
-
-        has_visited.set(current, true);
-
         if current.pos == end {
             return g_score.get(current) as i32;
         }
