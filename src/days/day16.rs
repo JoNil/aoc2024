@@ -1,5 +1,5 @@
 use glam::{ivec2, IVec2};
-use std::{cmp, fmt::Display, str};
+use std::{cmp, collections::BinaryHeap, fmt::Display, str};
 
 pub static INPUT: &str = include_str!("../input/16.txt");
 pub static TEST_INPUT: &str = include_str!("../input/16_test.txt");
@@ -264,6 +264,31 @@ where
     }
 }
 
+struct Cost {
+    pos: Pos,
+    cost: u32,
+}
+
+impl PartialEq for Cost {
+    fn eq(&self, other: &Self) -> bool {
+        self.cost.eq(&other.cost)
+    }
+}
+
+impl Eq for Cost {}
+
+impl PartialOrd for Cost {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Cost {
+    fn cmp(&self, other: &Self) -> cmp::Ordering {
+        other.cost.cmp(&self.cost)
+    }
+}
+
 pub fn a(input: &str) -> i32 {
     let mut map = Map::new(input);
 
@@ -273,6 +298,7 @@ pub fn a(input: &str) -> i32 {
     map.set(start, b'.');
     map.set(end, b'.');
 
+    let start_cost = manhattan(start, end);
     let start = Pos {
         pos: start,
         dir: Dir::Right,
@@ -282,16 +308,15 @@ pub fn a(input: &str) -> i32 {
     g_score.set(start, 0);
 
     let mut f_score = PosMap::<u32>::empty(map.width, map.height, u32::MAX);
-    f_score.set(start, manhattan(start.pos, end));
+    f_score.set(start, start_cost);
 
-    let mut open_set = Vec::new();
-    open_set.push(start);
+    let mut open_set = BinaryHeap::new();
+    open_set.push(Cost {
+        pos: start,
+        cost: start_cost,
+    });
 
-    while !open_set.is_empty() {
-        open_set.sort_by_key(|p| cmp::Reverse(f_score.get(*p)));
-
-        let current = open_set.pop().unwrap();
-
+    while let Some(Cost { pos: current, .. }) = open_set.pop() {
         if current.pos == end {
             return g_score.get(current) as i32;
         }
@@ -307,12 +332,15 @@ pub fn a(input: &str) -> i32 {
 
             let tentative_g_score = g_score.get(current) + step_cost;
             if tentative_g_score < g_score.get(neighbor) {
-                g_score.set(neighbor, tentative_g_score);
-                f_score.set(neighbor, tentative_g_score + manhattan(neighbor.pos, end));
+                let neighbor_f_score = tentative_g_score + manhattan(neighbor.pos, end);
 
-                if !open_set.contains(&neighbor) {
-                    open_set.push(neighbor);
-                }
+                g_score.set(neighbor, tentative_g_score);
+                f_score.set(neighbor, neighbor_f_score);
+
+                open_set.push(Cost {
+                    pos: neighbor,
+                    cost: neighbor_f_score,
+                });
             }
         }
     }
