@@ -1,3 +1,4 @@
+use crossterm::cursor;
 use glam::{ivec2, IVec2};
 use std::{cmp, fmt::Display, str};
 
@@ -287,8 +288,6 @@ pub fn a(input: &str) -> i32 {
     let mut open_set = Vec::new();
     open_set.push(start);
 
-    let mut came_from = PosMap::<Pos>::empty(map.width, map.width, Pos::default());
-
     while !open_set.is_empty() {
         open_set.sort_by_key(|p| cmp::Reverse(f_score.get(*p)));
 
@@ -309,7 +308,6 @@ pub fn a(input: &str) -> i32 {
 
             let tentative_g_score = g_score.get(current) + step_cost;
             if tentative_g_score < g_score.get(neighbor) {
-                came_from.set(neighbor, current);
                 g_score.set(neighbor, tentative_g_score);
                 f_score.set(neighbor, tentative_g_score + manhattan(neighbor.pos, end));
 
@@ -330,19 +328,68 @@ fn test_a() {
     assert_eq!(a(INPUT), 94436);
 }
 
-fn count_path(mut map: Map<u8>, came_from: &PosMap<Pos>, mut current: Pos, start: Pos) -> i32 {
+struct CameFrom {
+    up_data: Vec<Vec<Pos>>,
+    down_data: Vec<Vec<Pos>>,
+    left_data: Vec<Vec<Pos>>,
+    right_data: Vec<Vec<Pos>>,
+    width: i32,
+    height: i32,
+}
+
+impl CameFrom {
+    fn empty(width: i32, height: i32) -> CameFrom {
+        CameFrom {
+            up_data: vec![Vec::with_capacity(2); (width * height) as usize],
+            down_data: vec![Vec::with_capacity(2); (width * height) as usize],
+            left_data: vec![Vec::with_capacity(2); (width * height) as usize],
+            right_data: vec![Vec::with_capacity(2); (width * height) as usize],
+            width,
+            height,
+        }
+    }
+
+    fn get_mut(&mut self, pos: Pos) -> &mut Vec<Pos> {
+        let data = match pos.dir {
+            Dir::Up => self.up_data.as_mut_slice(),
+            Dir::Down => self.down_data.as_mut_slice(),
+            Dir::Left => self.left_data.as_mut_slice(),
+            Dir::Right => self.right_data.as_mut_slice(),
+        };
+
+        let pos = pos.pos;
+
+        let index = pos.x + pos.y * self.width;
+
+        if pos.x < 0 || pos.x >= self.width {
+            panic!();
+        }
+
+        if pos.y < 0 || pos.y >= self.height {
+            panic!();
+        }
+
+        &mut data[index as usize]
+    }
+}
+
+fn count_path(mut map: Map<u8>, came_from: &mut CameFrom, current: Pos, start: Pos) -> i32 {
     let mut steps = 0;
 
-    let mut current_pos = current.pos;
+    let mut open_set = vec![current];
 
-    while current != start {
-        println!("{current:?}");
-        map.set(current.pos, b'O');
-        current = came_from.get(current);
-        if current_pos != current.pos {
+    while let Some(current) = open_set.pop() {
+        if map.get(current.pos) == b'.' {
             steps += 1;
         }
-        current_pos = current.pos;
+        map.set(current.pos, b'O');
+
+        if current != start {
+            let came_from = came_from.get_mut(current);
+            for new in came_from {
+                open_set.push(*new);
+            }
+        }
     }
 
     println!("{map}");
@@ -373,7 +420,7 @@ pub fn b(input: &str) -> i32 {
     let mut open_set = Vec::new();
     open_set.push(start);
 
-    let mut came_from = PosMap::<Pos>::empty(map.width, map.width, Pos::default());
+    let mut came_from = CameFrom::empty(map.width, map.width);
 
     while !open_set.is_empty() {
         open_set.sort_by_key(|p| cmp::Reverse(f_score.get(*p)));
@@ -381,7 +428,7 @@ pub fn b(input: &str) -> i32 {
         let current = open_set.pop().unwrap();
 
         if current.pos == end {
-            return count_path(map.clone(), &came_from, current, start);
+            return count_path(map.clone(), &mut came_from, current, start);
         }
 
         for (neighbor, step_cost) in [
@@ -394,8 +441,10 @@ pub fn b(input: &str) -> i32 {
             }
 
             let tentative_g_score = g_score.get(current) + step_cost;
-            if tentative_g_score < g_score.get(neighbor) {
-                came_from.set(neighbor, current);
+            if tentative_g_score <= g_score.get(neighbor) {
+                let came_from = came_from.get_mut(neighbor);
+                came_from.push(current);
+
                 g_score.set(neighbor, tentative_g_score);
                 f_score.set(neighbor, tentative_g_score + manhattan(neighbor.pos, end));
 
@@ -412,6 +461,6 @@ pub fn b(input: &str) -> i32 {
 #[test]
 fn test_b() {
     assert_eq!(b(TEST_INPUT), 45);
-    assert_eq!(b(TEST_INPUT), 64);
+    assert_eq!(b(TEST_INPUT_2), 64);
     assert_eq!(b(INPUT), 0);
 }
