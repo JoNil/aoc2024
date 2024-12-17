@@ -103,8 +103,6 @@ impl Machine {
             let ins = Instruction::try_from(self.program[self.ip]).unwrap();
             let op = self.program[self.ip + 1];
 
-            println!("{:?}", self);
-
             match ins {
                 Instruction::Adv => {
                     self.a >>= self.combo(op);
@@ -134,11 +132,11 @@ impl Machine {
                     self.ip += 2;
                 }
                 Instruction::Bdv => {
-                    self.b >>= self.combo(op);
+                    self.b = self.a >> self.combo(op);
                     self.ip += 2;
                 }
                 Instruction::Cdv => {
-                    self.c >>= self.combo(op);
+                    self.c = self.a >> self.combo(op);
                     self.ip += 2;
                 }
             }
@@ -231,17 +229,15 @@ pub fn a(input: &str) -> String {
 
     machine.run(&mut out);
 
-    println!("{:?}", out);
-
     let out = out.iter().map(|n| format!("{n}")).collect::<Vec<_>>();
     out.join(",")
 }
 
 #[test]
 fn test_a() {
-    //assert_eq!(a(TEST_INPUT), "4,6,3,5,6,3,5,2,1,0");
+    assert_eq!(a(TEST_INPUT), "4,6,3,5,6,3,5,2,1,0");
     assert_eq!(a(TEST_INPUT_2), "2,7,6,5,6,0,2,3,1");
-    //assert_eq!(a(INPUT), "1,1,5,7,6,6,7,6,6");
+    assert_eq!(a(INPUT), "7,5,4,3,4,5,3,4,6");
 }
 
 pub fn b(input: &str) -> i32 {
