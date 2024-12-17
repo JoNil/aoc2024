@@ -76,7 +76,7 @@ impl Machine {
 
     fn combo(&self, op: u8) -> u32 {
         match op {
-            0..4 => op as u32,
+            0..=3 => op as u32,
             4 => self.a,
             5 => self.b,
             6 => self.c,
