@@ -73,9 +73,9 @@ impl TryFrom<u8> for Instruction {
 
 #[derive(Copy, Clone)]
 struct Machine {
-    a: u32,
-    b: u32,
-    c: u32,
+    a: u64,
+    b: u64,
+    c: u64,
     ip: usize,
 }
 
@@ -91,9 +91,9 @@ impl Debug for Machine {
 }
 
 impl Machine {
-    fn combo(&self, op: u8) -> u32 {
+    fn combo(&self, op: u8) -> u64 {
         match op {
-            0..=3 => op as u32,
+            0..=3 => op as u64,
             4 => self.a,
             5 => self.b,
             6 => self.c,
@@ -112,7 +112,7 @@ impl Machine {
                     self.ip += 2;
                 }
                 Instruction::Bxl => {
-                    self.b ^= op as u32;
+                    self.b ^= op as u64;
                     self.ip += 2;
                 }
                 Instruction::Bst => {
@@ -249,42 +249,47 @@ fn test_a() {
     assert_eq!(a(INPUT), "7,5,4,3,4,5,3,4,6");
 }
 
-pub fn b(input: &str) -> i32 {
+fn test(machine: Machine, program: &[u8], a: u64) -> Vec<u8> {
+    let mut out = Vec::new();
+
+    let mut machine = machine;
+    machine.a = a;
+
+    machine.run(&mut out, program, usize::MAX);
+
+    out
+}
+
+pub fn b(input: &str) -> u64 {
     let (machine, program) = parse(input);
 
-    'next: for output in 0..program.len() {
-        for i in 0.. {
-            let mut out = Vec::new();
+    let mut res = 0;
 
-            let mut machine = machine;
-            machine.a = i;
+    'next: for index in (0..program.len()).rev() {
+        for a in 1..=7 {
+            let a = a << (index * 3);
 
-            machine.run(&mut out, &program, output);
+            let out = test(machine, &program, res | a);
 
-            println!("{output} {i} {out:?}");
-
-            if out.len() == output + 1 && program[output as usize] == out[output as usize] {
-                if output == 0 {
-                    break 'next;
-                }
+            if out[index] == program[index] {
+                res |= a;
                 continue 'next;
             }
         }
     }
 
-    let mut out = Vec::new();
-    let mut machine = machine;
-    machine.a = 8 | 320;
+    for i in 0.. {
+        let out = test(machine, &program, res + i);
+        if out == program {
+            return res + i;
+        }
+    }
 
-    machine.run(&mut out, &program, 2);
-
-    println!("{out:?}");
-
-    0
+    res
 }
 
 #[test]
 fn test_b() {
     assert_eq!(b(TEST_INPUT_3), 117440);
-    //assert_eq!(b(INPUT), 0);
+    assert_eq!(b(INPUT), 164278899142333);
 }
