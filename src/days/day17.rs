@@ -2,7 +2,7 @@ pub static INPUT: &str = include_str!("../input/17.txt");
 pub static TEST_INPUT: &str = include_str!("../input/17_test.txt");
 
 #[derive(Copy, Clone, Debug)]
-#[repr(i8)]
+#[repr(u8)]
 enum Instruction {
     Adv = 0b000,
     Bxl = 0b001,
@@ -14,30 +14,30 @@ enum Instruction {
     Cdv = 0b111,
 }
 
-impl TryFrom<i8> for Instruction {
+impl TryFrom<u8> for Instruction {
     type Error = ();
 
-    fn try_from(v: i8) -> Result<Self, Self::Error> {
+    fn try_from(v: u8) -> Result<Self, Self::Error> {
         match v {
-            x if x == Instruction::Adv as i8 => Ok(Instruction::Adv),
-            x if x == Instruction::Bxl as i8 => Ok(Instruction::Bxl),
-            x if x == Instruction::Bst as i8 => Ok(Instruction::Bst),
-            x if x == Instruction::Jnz as i8 => Ok(Instruction::Jnz),
-            x if x == Instruction::Bxc as i8 => Ok(Instruction::Bxc),
-            x if x == Instruction::Out as i8 => Ok(Instruction::Out),
-            x if x == Instruction::Bdv as i8 => Ok(Instruction::Bdv),
-            x if x == Instruction::Cdv as i8 => Ok(Instruction::Cdv),
+            x if x == Instruction::Adv as u8 => Ok(Instruction::Adv),
+            x if x == Instruction::Bxl as u8 => Ok(Instruction::Bxl),
+            x if x == Instruction::Bst as u8 => Ok(Instruction::Bst),
+            x if x == Instruction::Jnz as u8 => Ok(Instruction::Jnz),
+            x if x == Instruction::Bxc as u8 => Ok(Instruction::Bxc),
+            x if x == Instruction::Out as u8 => Ok(Instruction::Out),
+            x if x == Instruction::Bdv as u8 => Ok(Instruction::Bdv),
+            x if x == Instruction::Cdv as u8 => Ok(Instruction::Cdv),
             _ => Err(()),
         }
     }
 }
 
 struct Machine {
-    a: i32,
-    b: i32,
-    c: i32,
+    a: u32,
+    b: u32,
+    c: u32,
     ip: usize,
-    program: Vec<i8>,
+    program: Vec<u8>,
 }
 
 impl Machine {
@@ -69,14 +69,14 @@ impl Machine {
                 .trim()
                 .trim_start_matches("Program: ")
                 .split(',')
-                .map(|i| i.parse::<i8>().unwrap())
+                .map(|i| i.parse::<u8>().unwrap())
                 .collect::<Vec<_>>(),
         }
     }
 
-    fn combo(&self, op: i8) -> i32 {
+    fn combo(&self, op: u8) -> u32 {
         match op {
-            0..4 => op as i32,
+            0..4 => op as u32,
             4 => self.a,
             5 => self.b,
             6 => self.c,
@@ -84,7 +84,7 @@ impl Machine {
         }
     }
 
-    fn run(&mut self, out: &mut Vec<i8>) {
+    fn run(&mut self, out: &mut Vec<u8>) {
         while self.ip + 1 < self.program.len() {
             let ins = Instruction::try_from(self.program[self.ip]).unwrap();
             let op = self.program[self.ip + 1];
@@ -95,7 +95,7 @@ impl Machine {
                     self.ip += 2;
                 }
                 Instruction::Bxl => {
-                    self.b ^= op as i32;
+                    self.b ^= op as u32;
                     self.ip += 2;
                 }
                 Instruction::Bst => {
@@ -114,7 +114,7 @@ impl Machine {
                     self.ip += 2;
                 }
                 Instruction::Out => {
-                    out.push((self.combo(op) & 0b111) as i8);
+                    out.push((self.combo(op) & 0b111) as u8);
                     self.ip += 2;
                 }
                 Instruction::Bdv => {
@@ -222,7 +222,7 @@ pub fn a(input: &str) -> String {
 #[test]
 fn test_a() {
     assert_eq!(a(TEST_INPUT), "4,6,3,5,6,3,5,2,1,0");
-    assert_eq!(a(INPUT), "");
+    assert_eq!(a(INPUT), "1,1,5,7,6,6,7,6,6");
 }
 
 pub fn b(input: &str) -> i32 {
