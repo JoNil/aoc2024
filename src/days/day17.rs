@@ -83,54 +83,137 @@ impl Machine {
             _ => panic!("Invalid instruction"),
         }
     }
+
+    fn run(&mut self, out: &mut Vec<i8>) {
+        while self.ip + 1 < self.program.len() {
+            let ins = Instruction::try_from(self.program[self.ip]).unwrap();
+            let op = self.program[self.ip + 1];
+
+            match ins {
+                Instruction::Adv => {
+                    self.a >>= self.combo(op);
+                    self.ip += 2;
+                }
+                Instruction::Bxl => {
+                    self.b ^= op as i32;
+                    self.ip += 2;
+                }
+                Instruction::Bst => {
+                    self.b = self.combo(op) & 0b111;
+                    self.ip += 2;
+                }
+                Instruction::Jnz => {
+                    if self.a != 0 {
+                        self.ip = op as _;
+                    } else {
+                        self.ip += 2;
+                    }
+                }
+                Instruction::Bxc => {
+                    self.b ^= self.c;
+                    self.ip += 2;
+                }
+                Instruction::Out => {
+                    out.push((self.combo(op) & 0b111) as i8);
+                    self.ip += 2;
+                }
+                Instruction::Bdv => {
+                    self.b >>= self.combo(op);
+                    self.ip += 2;
+                }
+                Instruction::Cdv => {
+                    self.c >>= self.combo(op);
+                    self.ip += 2;
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn test_machine() {
+    {
+        let mut out: Vec<_> = Vec::new();
+        let mut machine = Machine {
+            a: 0,
+            b: 0,
+            c: 9,
+            ip: 0,
+            program: vec![2, 6],
+        };
+
+        machine.run(&mut out);
+
+        assert_eq!(machine.b, 1);
+    }
+
+    {
+        let mut out: Vec<_> = Vec::new();
+        let mut machine = Machine {
+            a: 10,
+            b: 0,
+            c: 0,
+            ip: 0,
+            program: vec![5, 0, 5, 1, 5, 4],
+        };
+
+        machine.run(&mut out);
+
+        assert_eq!(&out, &[0, 1, 2]);
+    }
+
+    {
+        let mut out: Vec<_> = Vec::new();
+        let mut machine = Machine {
+            a: 2024,
+            b: 0,
+            c: 0,
+            ip: 0,
+            program: vec![0, 1, 5, 4, 3, 0],
+        };
+
+        machine.run(&mut out);
+
+        assert_eq!(&out, &[4, 2, 5, 6, 7, 7, 7, 7, 3, 1, 0]);
+        assert_eq!(machine.a, 0);
+    }
+
+    {
+        let mut out: Vec<_> = Vec::new();
+        let mut machine = Machine {
+            a: 0,
+            b: 29,
+            c: 0,
+            ip: 0,
+            program: vec![1, 7],
+        };
+
+        machine.run(&mut out);
+
+        assert_eq!(machine.b, 26);
+    }
+
+    {
+        let mut out: Vec<_> = Vec::new();
+        let mut machine = Machine {
+            a: 0,
+            b: 2024,
+            c: 43690,
+            ip: 0,
+            program: vec![4, 0],
+        };
+
+        machine.run(&mut out);
+
+        assert_eq!(machine.b, 44354);
+    }
 }
 
 pub fn a(input: &str) -> String {
     let mut machine = Machine::new(input);
     let mut out = Vec::new();
 
-    while machine.ip + 1 < machine.program.len() {
-        let ins = Instruction::try_from(machine.program[machine.ip]).unwrap();
-        let op = machine.program[machine.ip + 1];
-
-        match ins {
-            Instruction::Adv => {
-                machine.a >>= machine.combo(op);
-                machine.ip += 2;
-            }
-            Instruction::Bxl => {
-                machine.b ^= op as i32;
-                machine.ip += 2;
-            }
-            Instruction::Bst => {
-                machine.b = machine.combo(op) & 0b111;
-                machine.ip += 2;
-            }
-            Instruction::Jnz => {
-                if machine.a != 0 {
-                    machine.ip = op as _;
-                } else {
-                    machine.ip += 2;
-                }
-            }
-            Instruction::Bxc => {
-                machine.b ^= machine.c;
-                machine.ip += 2;
-            }
-            Instruction::Out => {
-                out.push(machine.combo(op) & 0b111);
-                machine.ip += 2;
-            }
-            Instruction::Bdv => {
-                machine.b >>= machine.combo(op);
-                machine.ip += 2;
-            }
-            Instruction::Cdv => {
-                machine.c >>= machine.combo(op);
-                machine.ip += 2;
-            }
-        }
-    }
+    machine.run(&mut out);
 
     let out = out.iter().map(|n| format!("{n}")).collect::<Vec<_>>();
     out.join(",")
