@@ -4,6 +4,7 @@ pub static INPUT: &str = include_str!("../input/17.txt");
 pub static TEST_INPUT: &str = include_str!("../input/17_test.txt");
 pub static TEST_INPUT_2: &str = include_str!("../input/17_test_2.txt");
 pub static TEST_INPUT_3: &str = include_str!("../input/17_test_3.txt");
+pub static TEST_INPUT_4: &str = include_str!("../input/17_test_4.txt");
 
 fn parse(input: &str) -> (Machine, Vec<u8>) {
     let (machine_str, program_str) = input.split_once("\n\n").unwrap();
@@ -292,4 +293,5 @@ pub fn b(input: &str) -> u64 {
 fn test_b() {
     assert_eq!(b(TEST_INPUT_3), 117440);
     assert_eq!(b(INPUT), 164278899142333);
+    //assert_eq!(b(TEST_INPUT_4), 164278899142333);
 }
