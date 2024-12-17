@@ -22,7 +22,7 @@ where
 fn main() {
     let start = Instant::now();
 
-    time(day01::a, day01::INPUT);
+    /*time(day01::a, day01::INPUT);
     time(day01::b, day01::INPUT);
 
     time(day02::a, day02::INPUT);
@@ -70,7 +70,7 @@ fn main() {
     time(day16::a, day16::INPUT);
     time(day16::b, day16::INPUT);
 
-    time(day17::a, day17::INPUT);
+    time(day17::a, day17::INPUT);*/
     time(day17::b, day17::INPUT);
 
     let elapsed = start.elapsed();

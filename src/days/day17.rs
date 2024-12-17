@@ -5,112 +5,6 @@ pub static TEST_INPUT: &str = include_str!("../input/17_test.txt");
 pub static TEST_INPUT_2: &str = include_str!("../input/17_test_2.txt");
 pub static TEST_INPUT_3: &str = include_str!("../input/17_test_3.txt");
 
-#[derive(Copy, Clone, Debug)]
-#[repr(u8)]
-enum Instruction {
-    Adv = 0b000,
-    Bxl = 0b001,
-    Bst = 0b010,
-    Jnz = 0b011,
-    Bxc = 0b100,
-    Out = 0b101,
-    Bdv = 0b110,
-    Cdv = 0b111,
-}
-
-impl TryFrom<u8> for Instruction {
-    type Error = ();
-
-    fn try_from(v: u8) -> Result<Self, Self::Error> {
-        match v {
-            x if x == Instruction::Adv as u8 => Ok(Instruction::Adv),
-            x if x == Instruction::Bxl as u8 => Ok(Instruction::Bxl),
-            x if x == Instruction::Bst as u8 => Ok(Instruction::Bst),
-            x if x == Instruction::Jnz as u8 => Ok(Instruction::Jnz),
-            x if x == Instruction::Bxc as u8 => Ok(Instruction::Bxc),
-            x if x == Instruction::Out as u8 => Ok(Instruction::Out),
-            x if x == Instruction::Bdv as u8 => Ok(Instruction::Bdv),
-            x if x == Instruction::Cdv as u8 => Ok(Instruction::Cdv),
-            _ => Err(()),
-        }
-    }
-}
-
-struct Machine {
-    a: u32,
-    b: u32,
-    c: u32,
-    ip: usize,
-}
-
-impl Debug for Machine {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Machine")
-            .field("a", &self.a)
-            .field("b", &self.b)
-            .field("c", &self.c)
-            .field("ip", &self.ip)
-            .finish()
-    }
-}
-
-impl Machine {
-    fn combo(&self, op: u8) -> u32 {
-        match op {
-            0..=3 => op as u32,
-            4 => self.a,
-            5 => self.b,
-            6 => self.c,
-            _ => panic!("Invalid instruction"),
-        }
-    }
-
-    fn run(&mut self, out: &mut Vec<u8>, program: &[u8]) {
-        while self.ip + 1 < program.len() {
-            let ins = Instruction::try_from(program[self.ip]).unwrap();
-            let op = program[self.ip + 1];
-
-            match ins {
-                Instruction::Adv => {
-                    self.a >>= self.combo(op);
-                    self.ip += 2;
-                }
-                Instruction::Bxl => {
-                    self.b ^= op as u32;
-                    self.ip += 2;
-                }
-                Instruction::Bst => {
-                    self.b = self.combo(op) & 0b111;
-                    self.ip += 2;
-                }
-                Instruction::Jnz => {
-                    if self.a != 0 {
-                        self.ip = op as _;
-                    } else {
-                        self.ip += 2;
-                    }
-                }
-                Instruction::Bxc => {
-                    self.b ^= self.c;
-                    self.ip += 2;
-                }
-                Instruction::Out => {
-                    out.push((self.combo(op) & 0b111) as u8);
-                    self.ip += 2;
-                }
-                Instruction::Bdv => {
-                    self.b = self.a >> self.combo(op);
-                    self.ip += 2;
-                }
-                Instruction::Cdv => {
-                    self.c = self.a >> self.combo(op);
-                    self.ip += 2;
-                }
-            }
-        }
-    }
-}
-
 fn parse(input: &str) -> (Machine, Vec<u8>) {
     let (machine_str, program_str) = input.split_once("\n\n").unwrap();
     let mut lines = machine_str.lines();
@@ -146,6 +40,118 @@ fn parse(input: &str) -> (Machine, Vec<u8>) {
     )
 }
 
+#[derive(Copy, Clone, Debug)]
+#[repr(u8)]
+enum Instruction {
+    Adv = 0b000,
+    Bxl = 0b001,
+    Bst = 0b010,
+    Jnz = 0b011,
+    Bxc = 0b100,
+    Out = 0b101,
+    Bdv = 0b110,
+    Cdv = 0b111,
+}
+
+impl TryFrom<u8> for Instruction {
+    type Error = ();
+
+    fn try_from(v: u8) -> Result<Self, Self::Error> {
+        match v {
+            x if x == Instruction::Adv as u8 => Ok(Instruction::Adv),
+            x if x == Instruction::Bxl as u8 => Ok(Instruction::Bxl),
+            x if x == Instruction::Bst as u8 => Ok(Instruction::Bst),
+            x if x == Instruction::Jnz as u8 => Ok(Instruction::Jnz),
+            x if x == Instruction::Bxc as u8 => Ok(Instruction::Bxc),
+            x if x == Instruction::Out as u8 => Ok(Instruction::Out),
+            x if x == Instruction::Bdv as u8 => Ok(Instruction::Bdv),
+            x if x == Instruction::Cdv as u8 => Ok(Instruction::Cdv),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Copy, Clone)]
+struct Machine {
+    a: u32,
+    b: u32,
+    c: u32,
+    ip: usize,
+}
+
+impl Debug for Machine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Machine")
+            .field("a", &self.a)
+            .field("b", &self.b)
+            .field("c", &self.c)
+            .field("ip", &self.ip)
+            .finish()
+    }
+}
+
+impl Machine {
+    fn combo(&self, op: u8) -> u32 {
+        match op {
+            0..=3 => op as u32,
+            4 => self.a,
+            5 => self.b,
+            6 => self.c,
+            _ => panic!("Invalid instruction"),
+        }
+    }
+
+    fn run(&mut self, out: &mut Vec<u8>, program: &[u8], mut break_on_out: usize) {
+        while self.ip + 1 < program.len() {
+            let ins = Instruction::try_from(program[self.ip]).unwrap();
+            let op = program[self.ip + 1];
+
+            match ins {
+                Instruction::Adv => {
+                    self.a >>= self.combo(op);
+                    self.ip += 2;
+                }
+                Instruction::Bxl => {
+                    self.b ^= op as u32;
+                    self.ip += 2;
+                }
+                Instruction::Bst => {
+                    self.b = self.combo(op) & 0b111;
+                    self.ip += 2;
+                }
+                Instruction::Jnz => {
+                    if self.a != 0 {
+                        self.ip = op as _;
+                    } else {
+                        self.ip += 2;
+                    }
+                }
+                Instruction::Bxc => {
+                    self.b ^= self.c;
+                    self.ip += 2;
+                }
+                Instruction::Out => {
+                    out.push((self.combo(op) & 0b111) as u8);
+                    self.ip += 2;
+
+                    if break_on_out == 0 {
+                        return;
+                    }
+                    break_on_out -= 1;
+                }
+                Instruction::Bdv => {
+                    self.b = self.a >> self.combo(op);
+                    self.ip += 2;
+                }
+                Instruction::Cdv => {
+                    self.c = self.a >> self.combo(op);
+                    self.ip += 2;
+                }
+            }
+        }
+    }
+}
+
 #[test]
 fn test_machine() {
     {
@@ -159,7 +165,7 @@ fn test_machine() {
 
         let program = vec![2, 6];
 
-        machine.run(&mut out, program.as_slice());
+        machine.run(&mut out, program.as_slice(), usize::MAX);
 
         assert_eq!(machine.b, 1);
     }
@@ -174,7 +180,7 @@ fn test_machine() {
         };
         let program = vec![5, 0, 5, 1, 5, 4];
 
-        machine.run(&mut out, program.as_slice());
+        machine.run(&mut out, program.as_slice(), usize::MAX);
 
         assert_eq!(&out, &[0, 1, 2]);
     }
@@ -189,7 +195,7 @@ fn test_machine() {
         };
         let program = vec![0, 1, 5, 4, 3, 0];
 
-        machine.run(&mut out, program.as_slice());
+        machine.run(&mut out, program.as_slice(), usize::MAX);
 
         assert_eq!(&out, &[4, 2, 5, 6, 7, 7, 7, 7, 3, 1, 0]);
         assert_eq!(machine.a, 0);
@@ -205,7 +211,7 @@ fn test_machine() {
         };
         let program = vec![1, 7];
 
-        machine.run(&mut out, program.as_slice());
+        machine.run(&mut out, program.as_slice(), usize::MAX);
 
         assert_eq!(machine.b, 26);
     }
@@ -220,7 +226,7 @@ fn test_machine() {
         };
         let program = vec![4, 0];
 
-        machine.run(&mut out, program.as_slice());
+        machine.run(&mut out, program.as_slice(), usize::MAX);
 
         assert_eq!(machine.b, 44354);
     }
@@ -230,7 +236,7 @@ pub fn a(input: &str) -> String {
     let (mut machine, program) = parse(input);
     let mut out = Vec::new();
 
-    machine.run(&mut out, &program);
+    machine.run(&mut out, &program, usize::MAX);
 
     let out = out.iter().map(|n| format!("{n}")).collect::<Vec<_>>();
     out.join(",")
@@ -244,7 +250,35 @@ fn test_a() {
 }
 
 pub fn b(input: &str) -> i32 {
-    let (mut machine, program) = parse(input);
+    let (machine, program) = parse(input);
+
+    'next: for output in 0..program.len() {
+        for i in 0.. {
+            let mut out = Vec::new();
+
+            let mut machine = machine;
+            machine.a = i;
+
+            machine.run(&mut out, &program, output);
+
+            println!("{output} {i} {out:?}");
+
+            if out.len() == output + 1 && program[output as usize] == out[output as usize] {
+                if output == 0 {
+                    break 'next;
+                }
+                continue 'next;
+            }
+        }
+    }
+
+    let mut out = Vec::new();
+    let mut machine = machine;
+    machine.a = 8 | 320;
+
+    machine.run(&mut out, &program, 2);
+
+    println!("{out:?}");
 
     0
 }
