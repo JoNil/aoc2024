@@ -1,4 +1,5 @@
 use glam::{ivec2, IVec2};
+use smallvec::SmallVec;
 use std::{cmp, collections::BinaryHeap, fmt::Display, str};
 
 pub static INPUT: &str = include_str!("../input/16.txt");
@@ -362,10 +363,10 @@ fn test_a() {
 }
 
 struct CameFrom {
-    up_data: Vec<Vec<Pos>>,
-    down_data: Vec<Vec<Pos>>,
-    left_data: Vec<Vec<Pos>>,
-    right_data: Vec<Vec<Pos>>,
+    up_data: Vec<SmallVec<[Pos; 2]>>,
+    down_data: Vec<SmallVec<[Pos; 2]>>,
+    left_data: Vec<SmallVec<[Pos; 2]>>,
+    right_data: Vec<SmallVec<[Pos; 2]>>,
     width: i32,
     height: i32,
 }
@@ -373,16 +374,16 @@ struct CameFrom {
 impl CameFrom {
     fn empty(width: i32, height: i32) -> CameFrom {
         CameFrom {
-            up_data: vec![Vec::with_capacity(2); (width * height) as usize],
-            down_data: vec![Vec::with_capacity(2); (width * height) as usize],
-            left_data: vec![Vec::with_capacity(2); (width * height) as usize],
-            right_data: vec![Vec::with_capacity(2); (width * height) as usize],
+            up_data: vec![SmallVec::new(); (width * height) as usize],
+            down_data: vec![SmallVec::new(); (width * height) as usize],
+            left_data: vec![SmallVec::new(); (width * height) as usize],
+            right_data: vec![SmallVec::new(); (width * height) as usize],
             width,
             height,
         }
     }
 
-    fn get_mut(&mut self, pos: Pos) -> &mut Vec<Pos> {
+    fn get_mut(&mut self, pos: Pos) -> &mut SmallVec<[Pos; 2]> {
         let data = match pos.dir {
             Dir::Up => self.up_data.as_mut_slice(),
             Dir::Down => self.down_data.as_mut_slice(),
@@ -437,8 +438,6 @@ pub fn b(input: &str) -> i32 {
     map.set(start, b'.');
     map.set(end, b'.');
 
-    let mut has_visited = PosMap::<bool>::empty(map.width, map.height, false);
-
     let start_cost = manhattan(start, end);
     let start = Pos {
         pos: start,
@@ -459,12 +458,6 @@ pub fn b(input: &str) -> i32 {
     let mut came_from = CameFrom::empty(map.width, map.width);
 
     while let Some(Cost { pos: current, .. }) = open_set.pop() {
-        if has_visited.get(current) {
-            continue;
-        }
-
-        has_visited.set(current, true);
-
         if current.pos == end {
             return count_path(map.clone(), &mut came_from, current, start);
         }
@@ -487,15 +480,17 @@ pub fn b(input: &str) -> i32 {
                 }
                 came_from.push(current);
 
-                let neighbor_f_score = tentative_g_score + manhattan(neighbor.pos, end);
+                if tentative_g_score < neighbor_g_score {
+                    let neighbor_f_score = tentative_g_score + manhattan(neighbor.pos, end);
 
-                g_score.set(neighbor, tentative_g_score);
-                f_score.set(neighbor, neighbor_f_score);
+                    g_score.set(neighbor, tentative_g_score);
+                    f_score.set(neighbor, neighbor_f_score);
 
-                open_set.push(Cost {
-                    pos: neighbor,
-                    cost: neighbor_f_score,
-                });
+                    open_set.push(Cost {
+                        pos: neighbor,
+                        cost: neighbor_f_score,
+                    });
+                }
             }
         }
     }
