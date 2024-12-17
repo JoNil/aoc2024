@@ -1,5 +1,8 @@
+use std::fmt::Debug;
+
 pub static INPUT: &str = include_str!("../input/17.txt");
 pub static TEST_INPUT: &str = include_str!("../input/17_test.txt");
+pub static TEST_INPUT_2: &str = include_str!("../input/17_test_2.txt");
 
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
@@ -38,6 +41,17 @@ struct Machine {
     c: u32,
     ip: usize,
     program: Vec<u8>,
+}
+
+impl Debug for Machine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Machine")
+            .field("a", &self.a)
+            .field("b", &self.b)
+            .field("c", &self.c)
+            .field("ip", &self.ip)
+            .finish()
+    }
 }
 
 impl Machine {
@@ -88,6 +102,8 @@ impl Machine {
         while self.ip + 1 < self.program.len() {
             let ins = Instruction::try_from(self.program[self.ip]).unwrap();
             let op = self.program[self.ip + 1];
+
+            println!("{:?}", self);
 
             match ins {
                 Instruction::Adv => {
@@ -215,14 +231,17 @@ pub fn a(input: &str) -> String {
 
     machine.run(&mut out);
 
+    println!("{:?}", out);
+
     let out = out.iter().map(|n| format!("{n}")).collect::<Vec<_>>();
     out.join(",")
 }
 
 #[test]
 fn test_a() {
-    assert_eq!(a(TEST_INPUT), "4,6,3,5,6,3,5,2,1,0");
-    assert_eq!(a(INPUT), "1,1,5,7,6,6,7,6,6");
+    //assert_eq!(a(TEST_INPUT), "4,6,3,5,6,3,5,2,1,0");
+    assert_eq!(a(TEST_INPUT_2), "2,7,6,5,6,0,2,3,1");
+    //assert_eq!(a(INPUT), "1,1,5,7,6,6,7,6,6");
 }
 
 pub fn b(input: &str) -> i32 {
