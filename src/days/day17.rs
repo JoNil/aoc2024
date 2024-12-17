@@ -3,6 +3,7 @@ use std::fmt::Debug;
 pub static INPUT: &str = include_str!("../input/17.txt");
 pub static TEST_INPUT: &str = include_str!("../input/17_test.txt");
 pub static TEST_INPUT_2: &str = include_str!("../input/17_test_2.txt");
+pub static TEST_INPUT_3: &str = include_str!("../input/17_test_3.txt");
 
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
@@ -40,7 +41,6 @@ struct Machine {
     b: u32,
     c: u32,
     ip: usize,
-    program: Vec<u8>,
 }
 
 impl Debug for Machine {
@@ -55,39 +55,6 @@ impl Debug for Machine {
 }
 
 impl Machine {
-    fn new(input: &str) -> Machine {
-        let (machine_str, program_str) = input.split_once("\n\n").unwrap();
-        let mut lines = machine_str.lines();
-
-        Machine {
-            a: lines
-                .next()
-                .unwrap()
-                .trim_start_matches("Register A: ")
-                .parse()
-                .unwrap(),
-            b: lines
-                .next()
-                .unwrap()
-                .trim_start_matches("Register B: ")
-                .parse()
-                .unwrap(),
-            c: lines
-                .next()
-                .unwrap()
-                .trim_start_matches("Register C: ")
-                .parse()
-                .unwrap(),
-            ip: 0,
-            program: program_str
-                .trim()
-                .trim_start_matches("Program: ")
-                .split(',')
-                .map(|i| i.parse::<u8>().unwrap())
-                .collect::<Vec<_>>(),
-        }
-    }
-
     fn combo(&self, op: u8) -> u32 {
         match op {
             0..=3 => op as u32,
@@ -98,10 +65,10 @@ impl Machine {
         }
     }
 
-    fn run(&mut self, out: &mut Vec<u8>) {
-        while self.ip + 1 < self.program.len() {
-            let ins = Instruction::try_from(self.program[self.ip]).unwrap();
-            let op = self.program[self.ip + 1];
+    fn run(&mut self, out: &mut Vec<u8>, program: &[u8]) {
+        while self.ip + 1 < program.len() {
+            let ins = Instruction::try_from(program[self.ip]).unwrap();
+            let op = program[self.ip + 1];
 
             match ins {
                 Instruction::Adv => {
@@ -144,6 +111,41 @@ impl Machine {
     }
 }
 
+fn parse(input: &str) -> (Machine, Vec<u8>) {
+    let (machine_str, program_str) = input.split_once("\n\n").unwrap();
+    let mut lines = machine_str.lines();
+
+    (
+        Machine {
+            a: lines
+                .next()
+                .unwrap()
+                .trim_start_matches("Register A: ")
+                .parse()
+                .unwrap(),
+            b: lines
+                .next()
+                .unwrap()
+                .trim_start_matches("Register B: ")
+                .parse()
+                .unwrap(),
+            c: lines
+                .next()
+                .unwrap()
+                .trim_start_matches("Register C: ")
+                .parse()
+                .unwrap(),
+            ip: 0,
+        },
+        program_str
+            .trim()
+            .trim_start_matches("Program: ")
+            .split(',')
+            .map(|i| i.parse::<u8>().unwrap())
+            .collect::<Vec<_>>(),
+    )
+}
+
 #[test]
 fn test_machine() {
     {
@@ -153,10 +155,11 @@ fn test_machine() {
             b: 0,
             c: 9,
             ip: 0,
-            program: vec![2, 6],
         };
 
-        machine.run(&mut out);
+        let program = vec![2, 6];
+
+        machine.run(&mut out, program.as_slice());
 
         assert_eq!(machine.b, 1);
     }
@@ -168,10 +171,10 @@ fn test_machine() {
             b: 0,
             c: 0,
             ip: 0,
-            program: vec![5, 0, 5, 1, 5, 4],
         };
+        let program = vec![5, 0, 5, 1, 5, 4];
 
-        machine.run(&mut out);
+        machine.run(&mut out, program.as_slice());
 
         assert_eq!(&out, &[0, 1, 2]);
     }
@@ -183,10 +186,10 @@ fn test_machine() {
             b: 0,
             c: 0,
             ip: 0,
-            program: vec![0, 1, 5, 4, 3, 0],
         };
+        let program = vec![0, 1, 5, 4, 3, 0];
 
-        machine.run(&mut out);
+        machine.run(&mut out, program.as_slice());
 
         assert_eq!(&out, &[4, 2, 5, 6, 7, 7, 7, 7, 3, 1, 0]);
         assert_eq!(machine.a, 0);
@@ -199,10 +202,10 @@ fn test_machine() {
             b: 29,
             c: 0,
             ip: 0,
-            program: vec![1, 7],
         };
+        let program = vec![1, 7];
 
-        machine.run(&mut out);
+        machine.run(&mut out, program.as_slice());
 
         assert_eq!(machine.b, 26);
     }
@@ -214,20 +217,20 @@ fn test_machine() {
             b: 2024,
             c: 43690,
             ip: 0,
-            program: vec![4, 0],
         };
+        let program = vec![4, 0];
 
-        machine.run(&mut out);
+        machine.run(&mut out, program.as_slice());
 
         assert_eq!(machine.b, 44354);
     }
 }
 
 pub fn a(input: &str) -> String {
-    let mut machine = Machine::new(input);
+    let (mut machine, program) = parse(input);
     let mut out = Vec::new();
 
-    machine.run(&mut out);
+    machine.run(&mut out, &program);
 
     let out = out.iter().map(|n| format!("{n}")).collect::<Vec<_>>();
     out.join(",")
@@ -241,11 +244,13 @@ fn test_a() {
 }
 
 pub fn b(input: &str) -> i32 {
+    let (mut machine, program) = parse(input);
+
     0
 }
 
 #[test]
 fn test_b() {
-    assert_eq!(b(TEST_INPUT), 0);
-    assert_eq!(b(INPUT), 0);
+    assert_eq!(b(TEST_INPUT_3), 117440);
+    //assert_eq!(b(INPUT), 0);
 }
