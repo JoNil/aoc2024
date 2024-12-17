@@ -261,37 +261,36 @@ fn test(machine: Machine, program: &[u8], a: u64) -> Vec<u8> {
     out
 }
 
-pub fn b(input: &str) -> u64 {
-    let (machine, program) = parse(input);
+fn search(machine: Machine, program: &[u8], index: usize, res: u64) -> u64 {
+    for a in 0..=7 {
+        let a = a << (index * 3);
 
-    let mut res = 0;
+        let out = test(machine, program, res | a);
 
-    'next: for index in (0..program.len()).rev() {
-        for a in 1..=7 {
-            let a = a << (index * 3);
-
-            let out = test(machine, &program, res | a);
-
-            if out[index] == program[index] {
-                res |= a;
-                continue 'next;
+        if out.len() == program.len() && out[index] == program[index] {
+            if index > 0 {
+                let answer = search(machine, program, index - 1, res | a);
+                if answer > 0 {
+                    return answer;
+                }
+            } else {
+                return res | a;
             }
         }
     }
 
-    for i in 0.. {
-        let out = test(machine, &program, res + i);
-        if out == program {
-            return res + i;
-        }
-    }
+    0
+}
 
-    res
+pub fn b(input: &str) -> u64 {
+    let (machine, program) = parse(input);
+
+    search(machine, &program, program.len() - 1, 0)
 }
 
 #[test]
 fn test_b() {
     assert_eq!(b(TEST_INPUT_3), 117440);
     assert_eq!(b(INPUT), 164278899142333);
-    //assert_eq!(b(TEST_INPUT_4), 164278899142333);
+    assert_eq!(b(TEST_INPUT_4), 107416870455451);
 }
