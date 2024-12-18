@@ -42,6 +42,8 @@ pub fn b(input: &str, size: IVec2) -> i32 {
 #[target_feature(enable = "avx512f,avx512bw,avx2")]
 #[allow(clippy::missing_safety_doc)]
 pub unsafe fn b_avx_512(input: &str, size: IVec2) -> i32 {
+    use std::arch::x86_64::{_mm512_mullo_epi16, _mm512_storeu_epi16};
+
     let mut robots = Robots::default();
 
     let mut map = Map::empty(size.x, size.y);
@@ -118,22 +120,23 @@ pub unsafe fn b_avx_512(input: &str, size: IVec2) -> i32 {
             _mm256_storeu_epi8(x_addr as _, _mm512_cvtepi16_epi8(new_x));
             _mm256_storeu_epi8(y_addr as _, _mm512_cvtepi16_epi8(new_y));
 
+            let mut index = [0i16; LANES];
+            let index_y = _mm512_mullo_epi16(new_y, width);
+            let index_x = _mm512_add_epi16(index_y, new_x);
+            _mm512_storeu_epi16(index.as_mut_ptr(), index_x);
+
             for ii in 0..LANES {
                 let i = i + ii;
                 if i >= count {
                     break;
                 }
+                let index = *index.get_unchecked(ii);
 
-                let new_x = robots.pos_x[i];
-                let new_y = robots.pos_y[i];
-
-                let index = new_x as i32 + new_y as i32 * size.x;
-
-                let robot_in_pos = map.data[index as usize];
+                let robot_in_pos = *map.data.get_unchecked(index as usize);
                 if robot_in_pos > 0 {
                     conflict = true;
                 }
-                map.data[index as usize] = 1;
+                *map.data.get_unchecked_mut(index as usize) = 1;
             }
         }
 
