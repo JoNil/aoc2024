@@ -6,7 +6,7 @@ struct Map<'a> {
     stride: i32,
 }
 
-impl Map {
+impl Map<'_> {
     fn get(&self, x: i32, y: i32) -> u8 {
         let index = x + y * self.stride;
 
