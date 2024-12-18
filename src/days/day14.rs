@@ -1,8 +1,8 @@
 use glam::IVec2;
 use std::arch::x86_64::{
-    _mm256_add_epi16, _mm256_add_epi8, _mm256_blendv_epi8, _mm256_cmpgt_epi16, _mm256_cmpgt_epi8,
-    _mm256_loadu_si256, _mm256_set1_epi16, _mm256_set1_epi8, _mm256_storeu_epi16,
-    _mm256_storeu_epi8, _mm256_sub_epi16, _mm256_sub_epi8,
+    _mm512_add_epi16, _mm512_add_epi8, _mm512_cmpgt_epi16_mask, _mm512_loadu_si512,
+    _mm512_mask_add_epi16, _mm512_mask_sub_epi16, _mm512_set1_epi16, _mm512_set1_epi8,
+    _mm512_storeu_epi16, _mm512_storeu_epi8, _mm512_sub_epi16, _mm512_sub_epi8,
 };
 
 pub static INPUT: &str = include_str!("../input/14.txt");
@@ -147,11 +147,11 @@ pub fn b(input: &str, size: IVec2) -> i32 {
     let mut step = 0;
 
     unsafe {
-        let zero = _mm256_set1_epi16(0);
-        let width = _mm256_set1_epi16(size.x as _);
-        let height = _mm256_set1_epi16(size.y as _);
-        let width_sub1 = _mm256_set1_epi16((size.x - 1) as _);
-        let height_sub1 = _mm256_set1_epi16((size.y - 1) as _);
+        let zero = _mm512_set1_epi16(0);
+        let width = _mm512_set1_epi16(size.x as _);
+        let height = _mm512_set1_epi16(size.y as _);
+        let width_sub1 = _mm512_set1_epi16((size.x - 1) as _);
+        let height_sub1 = _mm512_set1_epi16((size.y - 1) as _);
 
         loop {
             step += 1;
@@ -159,7 +159,7 @@ pub fn b(input: &str, size: IVec2) -> i32 {
             let mut conflict = false;
             map.data.fill(0);
 
-            const LANES: usize = 16;
+            const LANES: usize = 32;
 
             for i in (0..robots.pos_x.len()).step_by(LANES) {
                 let x_addr = robots.pos_x.as_ptr().add(i);
@@ -167,35 +167,29 @@ pub fn b(input: &str, size: IVec2) -> i32 {
                 let dx_addr = robots.speed_x.as_ptr().add(i);
                 let dy_addr = robots.speed_y.as_ptr().add(i);
 
-                let x = _mm256_loadu_si256(x_addr as _);
-                let y = _mm256_loadu_si256(y_addr as _);
+                let x = _mm512_loadu_si512(x_addr as _);
+                let y = _mm512_loadu_si512(y_addr as _);
 
-                let dx = _mm256_loadu_si256(dx_addr as _);
-                let dy = _mm256_loadu_si256(dy_addr as _);
+                let dx = _mm512_loadu_si512(dx_addr as _);
+                let dy = _mm512_loadu_si512(dy_addr as _);
 
-                let mut new_x = _mm256_add_epi16(x, dx);
-                let mut new_y = _mm256_add_epi16(y, dy);
+                let mut new_x = _mm512_add_epi16(x, dx);
+                let mut new_y = _mm512_add_epi16(y, dy);
 
-                let mut new_x_wrapped_mask = _mm256_cmpgt_epi16(new_x, width_sub1);
-                let mut new_y_wrapped_mask = _mm256_cmpgt_epi16(new_y, height_sub1);
+                let mut new_x_wrapped_mask = _mm512_cmpgt_epi16_mask(new_x, width_sub1);
+                let mut new_y_wrapped_mask = _mm512_cmpgt_epi16_mask(new_y, height_sub1);
 
-                let mut wrapped_x = _mm256_sub_epi16(new_x, width);
-                let mut wrapped_y = _mm256_sub_epi16(new_y, height);
+                new_x = _mm512_mask_sub_epi16(new_x, new_x_wrapped_mask, new_x, width);
+                new_y = _mm512_mask_sub_epi16(new_y, new_y_wrapped_mask, new_y, height);
 
-                new_x = _mm256_blendv_epi8(new_x, wrapped_x, new_x_wrapped_mask);
-                new_y = _mm256_blendv_epi8(new_y, wrapped_y, new_y_wrapped_mask);
+                new_x_wrapped_mask = _mm512_cmpgt_epi16_mask(zero, new_x);
+                new_y_wrapped_mask = _mm512_cmpgt_epi16_mask(zero, new_y);
 
-                new_x_wrapped_mask = _mm256_cmpgt_epi16(zero, new_x);
-                new_y_wrapped_mask = _mm256_cmpgt_epi16(zero, new_y);
+                new_x = _mm512_mask_add_epi16(new_x, new_x_wrapped_mask, new_x, width);
+                new_y = _mm512_mask_add_epi16(new_y, new_y_wrapped_mask, new_y, height);
 
-                wrapped_x = _mm256_add_epi16(new_x, width);
-                wrapped_y = _mm256_add_epi16(new_y, height);
-
-                new_x = _mm256_blendv_epi8(new_x, wrapped_x, new_x_wrapped_mask);
-                new_y = _mm256_blendv_epi8(new_y, wrapped_y, new_y_wrapped_mask);
-
-                _mm256_storeu_epi16(x_addr as _, new_x);
-                _mm256_storeu_epi16(y_addr as _, new_y);
+                _mm512_storeu_epi16(x_addr as _, new_x);
+                _mm512_storeu_epi16(y_addr as _, new_y);
 
                 for ii in 0..LANES {
                     let i = i + ii;
