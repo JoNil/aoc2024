@@ -29,6 +29,7 @@ pub fn b(input: &str, size: glam::IVec2) -> i32 {
     if cfg!(target_arch = "x86_64")
         && is_x86_feature_detected!("avx512f")
         && is_x86_feature_detected!("avx512bw")
+        && is_x86_feature_detected!("avx512vl")
         && is_x86_feature_detected!("avx2")
     {
         unsafe { b_avx_512(input, (size.x, size.y)) }
@@ -38,7 +39,7 @@ pub fn b(input: &str, size: glam::IVec2) -> i32 {
 }
 
 #[cfg(target_arch = "x86_64")]
-#[target_feature(enable = "avx512f,avx512bw,avx2")]
+#[target_feature(enable = "avx512f,avx512bw,avx512vl,avx2")]
 #[allow(clippy::missing_safety_doc)]
 unsafe fn b_avx_512(input: &str, size: (i32, i32)) -> i32 {
     use std::arch::x86_64::{_mm512_mullo_epi16, _mm512_storeu_epi16};
