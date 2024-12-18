@@ -1,8 +1,9 @@
 use glam::IVec2;
 use std::arch::x86_64::{
-    _mm512_add_epi16, _mm512_add_epi8, _mm512_cmpgt_epi16_mask, _mm512_loadu_si512,
-    _mm512_mask_add_epi16, _mm512_mask_sub_epi16, _mm512_set1_epi16, _mm512_set1_epi8,
-    _mm512_storeu_epi16, _mm512_storeu_epi8, _mm512_sub_epi16, _mm512_sub_epi8,
+    _mm512_add_epi16, _mm512_add_epi8, _mm512_cmpge_epi16_mask, _mm512_cmpgt_epi16_mask,
+    _mm512_cmplt_epi16_mask, _mm512_loadu_si512, _mm512_mask_add_epi16, _mm512_mask_sub_epi16,
+    _mm512_set1_epi16, _mm512_set1_epi8, _mm512_storeu_epi16, _mm512_storeu_epi8, _mm512_sub_epi16,
+    _mm512_sub_epi8,
 };
 
 pub static INPUT: &str = include_str!("../input/14.txt");
@@ -150,8 +151,6 @@ pub fn b(input: &str, size: IVec2) -> i32 {
         let zero = _mm512_set1_epi16(0);
         let width = _mm512_set1_epi16(size.x as _);
         let height = _mm512_set1_epi16(size.y as _);
-        let width_sub1 = _mm512_set1_epi16((size.x - 1) as _);
-        let height_sub1 = _mm512_set1_epi16((size.y - 1) as _);
 
         loop {
             step += 1;
@@ -176,14 +175,14 @@ pub fn b(input: &str, size: IVec2) -> i32 {
                 let mut new_x = _mm512_add_epi16(x, dx);
                 let mut new_y = _mm512_add_epi16(y, dy);
 
-                let mut new_x_wrapped_mask = _mm512_cmpgt_epi16_mask(new_x, width_sub1);
-                let mut new_y_wrapped_mask = _mm512_cmpgt_epi16_mask(new_y, height_sub1);
+                let mut new_x_wrapped_mask = _mm512_cmpge_epi16_mask(new_x, width);
+                let mut new_y_wrapped_mask = _mm512_cmpge_epi16_mask(new_y, height);
 
                 new_x = _mm512_mask_sub_epi16(new_x, new_x_wrapped_mask, new_x, width);
                 new_y = _mm512_mask_sub_epi16(new_y, new_y_wrapped_mask, new_y, height);
 
-                new_x_wrapped_mask = _mm512_cmpgt_epi16_mask(zero, new_x);
-                new_y_wrapped_mask = _mm512_cmpgt_epi16_mask(zero, new_y);
+                new_x_wrapped_mask = _mm512_cmplt_epi16_mask(new_x, zero);
+                new_y_wrapped_mask = _mm512_cmplt_epi16_mask(new_y, zero);
 
                 new_x = _mm512_mask_add_epi16(new_x, new_x_wrapped_mask, new_x, width);
                 new_y = _mm512_mask_add_epi16(new_y, new_y_wrapped_mask, new_y, height);
