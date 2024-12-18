@@ -8,34 +8,13 @@ use std::arch::x86_64::{
 #[derive(Clone)]
 struct Map {
     data: Vec<i8>,
-    width: i8,
-    height: i8,
 }
 
 impl Map {
     fn empty(width: i32, height: i32) -> Map {
         Map {
             data: vec![0; (width * height) as usize],
-            width: width as i8,
-            height: height as i8,
         }
-    }
-
-    fn modify(&mut self, x: i8, y: i8, delta: i8) -> i8 {
-        if x < 0 || x >= self.width {
-            return 0;
-        }
-
-        if y < 0 || y >= self.height {
-            return 0;
-        }
-
-        let index = x as i32 + y as i32 * self.width as i32;
-
-        let new = self.data[index as usize] + delta;
-        self.data[index as usize] = new;
-
-        new
     }
 }
 
@@ -84,8 +63,6 @@ pub unsafe fn b_avx_512(input: &str, size: IVec2) -> i32 {
         robots.pos_y.push(y);
         robots.speed_x.push(dx);
         robots.speed_y.push(dy);
-
-        map.modify(x, y, 1);
 
         count += 1;
     }
@@ -150,7 +127,7 @@ pub unsafe fn b_avx_512(input: &str, size: IVec2) -> i32 {
                 let new_x = robots.pos_x[i];
                 let new_y = robots.pos_y[i];
 
-                let index = new_x as i32 + new_y as i32 * map.width as i32;
+                let index = new_x as i32 + new_y as i32 * size.x;
 
                 let robots_in_pos = map.data[index as usize] + 1;
                 map.data[index as usize] = robots_in_pos;
