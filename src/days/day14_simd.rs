@@ -1,4 +1,3 @@
-use glam::IVec2;
 use std::arch::x86_64::{
     _mm256_loadu_si256, _mm256_storeu_epi8, _mm512_add_epi16, _mm512_cmpge_epi16_mask,
     _mm512_cmplt_epi16_mask, _mm512_cvtepi16_epi8, _mm512_cvtepi8_epi16, _mm512_mask_add_epi16,
@@ -26,13 +25,13 @@ struct Robots {
     speed_y: Vec<i8>,
 }
 
-pub fn b(input: &str, size: IVec2) -> i32 {
+pub fn b(input: &str, size: glam::IVec2) -> i32 {
     if cfg!(target_arch = "x86_64")
         && is_x86_feature_detected!("avx512f")
         && is_x86_feature_detected!("avx512bw")
         && is_x86_feature_detected!("avx2")
     {
-        unsafe { b_avx_512(input, size) }
+        unsafe { b_avx_512(input, (size.x, size.y)) }
     } else {
         crate::day14::b(input, size)
     }
@@ -41,12 +40,12 @@ pub fn b(input: &str, size: IVec2) -> i32 {
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx512f,avx512bw,avx2")]
 #[allow(clippy::missing_safety_doc)]
-pub unsafe fn b_avx_512(input: &str, size: IVec2) -> i32 {
+unsafe fn b_avx_512(input: &str, size: (i32, i32)) -> i32 {
     use std::arch::x86_64::{_mm512_mullo_epi16, _mm512_storeu_epi16};
 
     let mut robots = Robots::default();
 
-    let mut map = Map::empty(size.x, size.y);
+    let mut map = Map::empty(size.0, size.1);
 
     let mut count = 0;
 
@@ -79,8 +78,8 @@ pub unsafe fn b_avx_512(input: &str, size: IVec2) -> i32 {
     let mut step = 0;
 
     let zero = _mm512_set1_epi16(0);
-    let width = _mm512_set1_epi16(size.x as _);
-    let height = _mm512_set1_epi16(size.y as _);
+    let width = _mm512_set1_epi16(size.0 as _);
+    let height = _mm512_set1_epi16(size.1 as _);
 
     loop {
         step += 1;
