@@ -10,7 +10,7 @@ struct Parse<'a> {
 }
 
 impl<'a> Parse<'a> {
-    fn new(input: &'a str) -> Parse {
+    fn new(input: &'a str) -> Parse<'a> {
         Parse {
             input: input.as_bytes(),
             current: 0,
