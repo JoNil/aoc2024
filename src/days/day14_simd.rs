@@ -129,12 +129,11 @@ pub unsafe fn b_avx_512(input: &str, size: IVec2) -> i32 {
 
                 let index = new_x as i32 + new_y as i32 * size.x;
 
-                let robots_in_pos = map.data[index as usize] + 1;
-                map.data[index as usize] = robots_in_pos;
-
-                if robots_in_pos > 1 {
+                let robot_in_pos = map.data[index as usize];
+                if robot_in_pos > 0 {
                     conflict = true;
                 }
+                map.data[index as usize] = 1;
             }
         }
 
