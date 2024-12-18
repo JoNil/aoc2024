@@ -50,7 +50,10 @@ struct Robots {
     speed_y: Vec<i8>,
 }
 
-pub fn b(input: &str, size: IVec2) -> i32 {
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx512f,avx512bw,avx2")]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe fn b(input: &str, size: IVec2) -> i32 {
     let mut robots = Robots::default();
 
     let mut map = Map::empty(size.x, size.y);
@@ -87,72 +90,70 @@ pub fn b(input: &str, size: IVec2) -> i32 {
 
     let mut step = 0;
 
-    unsafe {
-        let zero = _mm512_set1_epi16(0);
-        let width = _mm512_set1_epi16(size.x as _);
-        let height = _mm512_set1_epi16(size.y as _);
+    let zero = _mm512_set1_epi16(0);
+    let width = _mm512_set1_epi16(size.x as _);
+    let height = _mm512_set1_epi16(size.y as _);
 
-        loop {
-            step += 1;
+    loop {
+        step += 1;
 
-            let mut conflict = false;
-            map.data.fill(0);
+        let mut conflict = false;
+        map.data.fill(0);
 
-            const LANES: usize = 32;
+        const LANES: usize = 32;
 
-            for i in (0..robots.pos_x.len()).step_by(LANES) {
-                let x_addr = robots.pos_x.as_ptr().add(i);
-                let y_addr = robots.pos_y.as_ptr().add(i);
-                let dx_addr = robots.speed_x.as_ptr().add(i);
-                let dy_addr = robots.speed_y.as_ptr().add(i);
+        for i in (0..robots.pos_x.len()).step_by(LANES) {
+            let x_addr = robots.pos_x.as_ptr().add(i);
+            let y_addr = robots.pos_y.as_ptr().add(i);
+            let dx_addr = robots.speed_x.as_ptr().add(i);
+            let dy_addr = robots.speed_y.as_ptr().add(i);
 
-                let x = _mm512_cvtepi8_epi16(_mm256_loadu_si256(x_addr as _));
-                let y = _mm512_cvtepi8_epi16(_mm256_loadu_si256(y_addr as _));
+            let x = _mm512_cvtepi8_epi16(_mm256_loadu_si256(x_addr as _));
+            let y = _mm512_cvtepi8_epi16(_mm256_loadu_si256(y_addr as _));
 
-                let dx = _mm512_cvtepi8_epi16(_mm256_loadu_si256(dx_addr as _));
-                let dy = _mm512_cvtepi8_epi16(_mm256_loadu_si256(dy_addr as _));
+            let dx = _mm512_cvtepi8_epi16(_mm256_loadu_si256(dx_addr as _));
+            let dy = _mm512_cvtepi8_epi16(_mm256_loadu_si256(dy_addr as _));
 
-                let mut new_x = _mm512_add_epi16(x, dx);
-                let mut new_y = _mm512_add_epi16(y, dy);
+            let mut new_x = _mm512_add_epi16(x, dx);
+            let mut new_y = _mm512_add_epi16(y, dy);
 
-                let mut new_x_wrapped_mask = _mm512_cmpge_epi16_mask(new_x, width);
-                let mut new_y_wrapped_mask = _mm512_cmpge_epi16_mask(new_y, height);
+            let mut new_x_wrapped_mask = _mm512_cmpge_epi16_mask(new_x, width);
+            let mut new_y_wrapped_mask = _mm512_cmpge_epi16_mask(new_y, height);
 
-                new_x = _mm512_mask_sub_epi16(new_x, new_x_wrapped_mask, new_x, width);
-                new_y = _mm512_mask_sub_epi16(new_y, new_y_wrapped_mask, new_y, height);
+            new_x = _mm512_mask_sub_epi16(new_x, new_x_wrapped_mask, new_x, width);
+            new_y = _mm512_mask_sub_epi16(new_y, new_y_wrapped_mask, new_y, height);
 
-                new_x_wrapped_mask = _mm512_cmplt_epi16_mask(new_x, zero);
-                new_y_wrapped_mask = _mm512_cmplt_epi16_mask(new_y, zero);
+            new_x_wrapped_mask = _mm512_cmplt_epi16_mask(new_x, zero);
+            new_y_wrapped_mask = _mm512_cmplt_epi16_mask(new_y, zero);
 
-                new_x = _mm512_mask_add_epi16(new_x, new_x_wrapped_mask, new_x, width);
-                new_y = _mm512_mask_add_epi16(new_y, new_y_wrapped_mask, new_y, height);
+            new_x = _mm512_mask_add_epi16(new_x, new_x_wrapped_mask, new_x, width);
+            new_y = _mm512_mask_add_epi16(new_y, new_y_wrapped_mask, new_y, height);
 
-                _mm256_storeu_epi8(x_addr as _, _mm512_cvtepi16_epi8(new_x));
-                _mm256_storeu_epi8(y_addr as _, _mm512_cvtepi16_epi8(new_y));
+            _mm256_storeu_epi8(x_addr as _, _mm512_cvtepi16_epi8(new_x));
+            _mm256_storeu_epi8(y_addr as _, _mm512_cvtepi16_epi8(new_y));
 
-                for ii in 0..LANES {
-                    let i = i + ii;
-                    if i >= count {
-                        break;
-                    }
+            for ii in 0..LANES {
+                let i = i + ii;
+                if i >= count {
+                    break;
+                }
 
-                    let new_x = robots.pos_x[i];
-                    let new_y = robots.pos_y[i];
+                let new_x = robots.pos_x[i];
+                let new_y = robots.pos_y[i];
 
-                    let index = new_x as i32 + new_y as i32 * map.width as i32;
+                let index = new_x as i32 + new_y as i32 * map.width as i32;
 
-                    let robots_in_pos = map.data[index as usize] + 1;
-                    map.data[index as usize] = robots_in_pos;
+                let robots_in_pos = map.data[index as usize] + 1;
+                map.data[index as usize] = robots_in_pos;
 
-                    if robots_in_pos > 1 {
-                        conflict = true;
-                    }
+                if robots_in_pos > 1 {
+                    conflict = true;
                 }
             }
+        }
 
-            if !conflict {
-                break;
-            }
+        if !conflict {
+            break;
         }
     }
 
@@ -161,5 +162,5 @@ pub fn b(input: &str, size: IVec2) -> i32 {
 
 #[test]
 fn test_b() {
-    assert_eq!(b(INPUT, glam::ivec2(101, 103)), 7858);
+    assert_eq!(unsafe { b(INPUT, glam::ivec2(101, 103)) }, 7858);
 }

@@ -63,7 +63,10 @@ fn main() {
 
     time(|input| day14::a(input, ivec2(101, 103)), day14::INPUT);
     time(|input| day14::b(input, ivec2(101, 103)), day14::INPUT);
-    time(|input| day14_simd::b(input, ivec2(101, 103)), day14::INPUT);
+    time(
+        |input| unsafe { day14_simd::b(input, ivec2(101, 103)) },
+        day14::INPUT,
+    );
 
     time(day15::a, day15::INPUT);
     time(day15::b, day15::INPUT);
