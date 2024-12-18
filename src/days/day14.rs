@@ -1,9 +1,8 @@
 use glam::IVec2;
 use std::arch::x86_64::{
-    _mm512_add_epi16, _mm512_add_epi8, _mm512_cmpge_epi16_mask, _mm512_cmpgt_epi16_mask,
-    _mm512_cmplt_epi16_mask, _mm512_loadu_si512, _mm512_mask_add_epi16, _mm512_mask_sub_epi16,
-    _mm512_set1_epi16, _mm512_set1_epi8, _mm512_storeu_epi16, _mm512_storeu_epi8, _mm512_sub_epi16,
-    _mm512_sub_epi8,
+    _mm256_loadu_si256, _mm256_storeu_epi8, _mm512_add_epi16, _mm512_cmpge_epi16_mask,
+    _mm512_cmplt_epi16_mask, _mm512_cvtepi16_epi8, _mm512_cvtepi8_epi16, _mm512_mask_add_epi16,
+    _mm512_mask_sub_epi16, _mm512_set1_epi16,
 };
 
 pub static INPUT: &str = include_str!("../input/14.txt");
@@ -45,10 +44,10 @@ impl Map {
 
 #[derive(Default, Debug)]
 struct Robots {
-    pos_x: Vec<i16>,
-    pos_y: Vec<i16>,
-    speed_x: Vec<i16>,
-    speed_y: Vec<i16>,
+    pos_x: Vec<i8>,
+    pos_y: Vec<i8>,
+    speed_x: Vec<i8>,
+    speed_y: Vec<i8>,
 }
 
 pub fn a(input: &str, size: IVec2) -> i32 {
@@ -73,13 +72,15 @@ pub fn a(input: &str, size: IVec2) -> i32 {
 
     for _step in 0..100 {
         for i in 0..robots.pos_x.len() {
-            robots.pos_x[i] = (robots.pos_x[i] + robots.speed_x[i]).rem_euclid(size.x as _);
-            robots.pos_y[i] = (robots.pos_y[i] + robots.speed_y[i]).rem_euclid(size.y as _);
+            robots.pos_x[i] =
+                (robots.pos_x[i] as i16 + robots.speed_x[i] as i16).rem_euclid(size.x as _) as i8;
+            robots.pos_y[i] =
+                (robots.pos_y[i] as i16 + robots.speed_y[i] as i16).rem_euclid(size.y as _) as i8;
         }
     }
 
-    let middle_x = size.x as i16 / 2;
-    let middle_y = size.y as i16 / 2;
+    let middle_x = size.x as i8 / 2;
+    let middle_y = size.y as i8 / 2;
 
     let mut q1 = 0;
     let mut q2 = 0;
@@ -133,7 +134,7 @@ pub fn b(input: &str, size: IVec2) -> i32 {
         robots.speed_x.push(dx);
         robots.speed_y.push(dy);
 
-        map.modify(x as i8, y as i8, 1);
+        map.modify(x, y, 1);
 
         count += 1;
     }
@@ -166,11 +167,11 @@ pub fn b(input: &str, size: IVec2) -> i32 {
                 let dx_addr = robots.speed_x.as_ptr().add(i);
                 let dy_addr = robots.speed_y.as_ptr().add(i);
 
-                let x = _mm512_loadu_si512(x_addr as _);
-                let y = _mm512_loadu_si512(y_addr as _);
+                let x = _mm512_cvtepi8_epi16(_mm256_loadu_si256(x_addr as _));
+                let y = _mm512_cvtepi8_epi16(_mm256_loadu_si256(y_addr as _));
 
-                let dx = _mm512_loadu_si512(dx_addr as _);
-                let dy = _mm512_loadu_si512(dy_addr as _);
+                let dx = _mm512_cvtepi8_epi16(_mm256_loadu_si256(dx_addr as _));
+                let dy = _mm512_cvtepi8_epi16(_mm256_loadu_si256(dy_addr as _));
 
                 let mut new_x = _mm512_add_epi16(x, dx);
                 let mut new_y = _mm512_add_epi16(y, dy);
@@ -187,8 +188,8 @@ pub fn b(input: &str, size: IVec2) -> i32 {
                 new_x = _mm512_mask_add_epi16(new_x, new_x_wrapped_mask, new_x, width);
                 new_y = _mm512_mask_add_epi16(new_y, new_y_wrapped_mask, new_y, height);
 
-                _mm512_storeu_epi16(x_addr as _, new_x);
-                _mm512_storeu_epi16(y_addr as _, new_y);
+                _mm256_storeu_epi8(x_addr as _, _mm512_cvtepi16_epi8(new_x));
+                _mm256_storeu_epi8(y_addr as _, _mm512_cvtepi16_epi8(new_y));
 
                 for ii in 0..LANES {
                     let i = i + ii;
