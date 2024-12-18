@@ -1,5 +1,5 @@
 use glam::{ivec2, IVec2};
-use std::{cmp, collections::BinaryHeap, fmt::Display, str, u32};
+use std::{cmp, collections::BinaryHeap, fmt::Display, str};
 
 pub static INPUT: &str = include_str!("../input/18.txt");
 pub static TEST_INPUT: &str = include_str!("../input/18_test.txt");
