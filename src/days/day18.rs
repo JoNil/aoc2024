@@ -295,5 +295,5 @@ pub fn b(input: &str, size: IVec2, steps: i32) -> IVec2 {
 #[test]
 fn test_b() {
     assert_eq!(b(TEST_INPUT, ivec2(7, 7), 12), ivec2(6, 1));
-    assert_eq!(b(INPUT, ivec2(70, 70), 1024), ivec2(0, 0));
+    assert_eq!(b(INPUT, ivec2(71, 71), 1024), ivec2(28, 26));
 }
