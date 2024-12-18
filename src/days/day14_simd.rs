@@ -5,9 +5,6 @@ use std::arch::x86_64::{
     _mm512_mask_sub_epi16, _mm512_set1_epi16,
 };
 
-pub static INPUT: &str = include_str!("../input/14.txt");
-pub static TEST_INPUT: &str = include_str!("../input/14_test.txt");
-
 #[derive(Clone)]
 struct Map {
     data: Vec<i8>,
@@ -58,7 +55,7 @@ pub fn b(input: &str, size: IVec2) -> i32 {
     {
         unsafe { b_avx_512(input, size) }
     } else {
-        b(input, size)
+        crate::day14::b(input, size)
     }
 }
 
@@ -174,5 +171,5 @@ pub unsafe fn b_avx_512(input: &str, size: IVec2) -> i32 {
 
 #[test]
 fn test_b() {
-    assert_eq!(b(INPUT, glam::ivec2(101, 103)), 7858);
+    assert_eq!(b(crate::day14::INPUT, glam::ivec2(101, 103)), 7858);
 }
