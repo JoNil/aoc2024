@@ -73,6 +73,9 @@ fn main() {
     time(day17::a, day17::INPUT);
     time(day17::b, day17::INPUT);
 
+    time(|input| day18::a(input, ivec2(70, 70), 1024), day18::INPUT);
+    time(|input| day18::b(input, ivec2(70, 70)), day18::INPUT);
+
     let elapsed = start.elapsed();
 
     println!("Total Time {} us", elapsed.as_micros());
