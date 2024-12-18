@@ -1,5 +1,5 @@
 use glam::{ivec2, IVec2};
-use std::{cmp, collections::BinaryHeap, fmt::Display, str};
+use std::{cmp, collections::BinaryHeap, fmt::Display, str, u32};
 
 pub static INPUT: &str = include_str!("../input/18.txt");
 pub static TEST_INPUT: &str = include_str!("../input/18_test.txt");
@@ -225,7 +225,7 @@ fn test_a() {
     assert_eq!(a(INPUT, ivec2(71, 71), 1024), 312);
 }
 
-pub fn b(input: &str, size: IVec2, steps: i32) -> IVec2 {
+pub fn b(input: &str, size: IVec2) -> IVec2 {
     let mut map = Map::empty(size.x, size.y, b'.');
 
     let mut blocks = Vec::new();
@@ -235,22 +235,25 @@ pub fn b(input: &str, size: IVec2, steps: i32) -> IVec2 {
         blocks.push(ivec2(x.parse().unwrap(), y.parse().unwrap()));
     }
 
-    for i in 0..steps {
-        map.set(blocks[i as usize], b'#');
+    for block in &blocks {
+        map.set(*block, b'#');
     }
 
-    'next: for block in &blocks[steps as usize..] {
-        map.set(*block, b'#');
+    let mut g_score = Map::<u32>::empty(map.width, map.height, u32::MAX);
+    let mut f_score = Map::<u32>::empty(map.width, map.height, u32::MAX);
+
+    for block in blocks.iter().rev() {
+        map.set(*block, b'.');
 
         let start = ivec2(0, 0);
         let end = ivec2(size.x - 1, size.y - 1);
 
         let start_cost = manhattan(start, end);
 
-        let mut g_score = Map::<u32>::empty(map.width, map.height, u32::MAX);
+        g_score.data.fill(u32::MAX);
         g_score.set(start, 0);
 
-        let mut f_score = Map::<u32>::empty(map.width, map.height, u32::MAX);
+        f_score.data.fill(u32::MAX);
         f_score.set(start, start_cost);
 
         let mut open_set = BinaryHeap::new();
@@ -261,7 +264,7 @@ pub fn b(input: &str, size: IVec2, steps: i32) -> IVec2 {
 
         while let Some(Cost { pos: current, .. }) = open_set.pop() {
             if current == end {
-                continue 'next;
+                return *block;
             }
 
             for dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
@@ -285,8 +288,6 @@ pub fn b(input: &str, size: IVec2, steps: i32) -> IVec2 {
                 }
             }
         }
-
-        return *block;
     }
 
     panic!("Found no solution");
@@ -294,6 +295,6 @@ pub fn b(input: &str, size: IVec2, steps: i32) -> IVec2 {
 
 #[test]
 fn test_b() {
-    assert_eq!(b(TEST_INPUT, ivec2(7, 7), 12), ivec2(6, 1));
-    assert_eq!(b(INPUT, ivec2(71, 71), 1024), ivec2(28, 26));
+    assert_eq!(b(TEST_INPUT, ivec2(7, 7)), ivec2(6, 1));
+    assert_eq!(b(INPUT, ivec2(71, 71)), ivec2(28, 26));
 }
