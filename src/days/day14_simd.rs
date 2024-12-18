@@ -50,10 +50,22 @@ struct Robots {
     speed_y: Vec<i8>,
 }
 
+pub fn b(input: &str, size: IVec2) -> i32 {
+    if cfg!(target_arch = "x86_64")
+        && is_x86_feature_detected!("avx512f")
+        && is_x86_feature_detected!("avx512bw")
+        && is_x86_feature_detected!("avx2")
+    {
+        unsafe { b_avx_512(input, size) }
+    } else {
+        b(input, size)
+    }
+}
+
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx512f,avx512bw,avx2")]
 #[allow(clippy::missing_safety_doc)]
-pub unsafe fn b(input: &str, size: IVec2) -> i32 {
+pub unsafe fn b_avx_512(input: &str, size: IVec2) -> i32 {
     let mut robots = Robots::default();
 
     let mut map = Map::empty(size.x, size.y);
@@ -162,5 +174,5 @@ pub unsafe fn b(input: &str, size: IVec2) -> i32 {
 
 #[test]
 fn test_b() {
-    assert_eq!(unsafe { b(INPUT, glam::ivec2(101, 103)) }, 7858);
+    assert_eq!(b(INPUT, glam::ivec2(101, 103)), 7858);
 }
