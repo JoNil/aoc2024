@@ -222,15 +222,78 @@ pub fn a(input: &str, size: IVec2, steps: i32) -> i32 {
 #[test]
 fn test_a() {
     assert_eq!(a(TEST_INPUT, ivec2(7, 7), 12), 22);
-    assert_eq!(a(INPUT, ivec2(71, 71), 1024), 0);
+    assert_eq!(a(INPUT, ivec2(71, 71), 1024), 312);
 }
 
-pub fn b(input: &str, size: IVec2) -> i32 {
-    0
+pub fn b(input: &str, size: IVec2, steps: i32) -> IVec2 {
+    let mut map = Map::empty(size.x, size.y, b'.');
+
+    let mut blocks = Vec::new();
+
+    for line in input.lines() {
+        let (x, y) = line.split_once(',').unwrap();
+        blocks.push(ivec2(x.parse().unwrap(), y.parse().unwrap()));
+    }
+
+    for i in 0..steps {
+        map.set(blocks[i as usize], b'#');
+    }
+
+    'next: for block in &blocks[steps as usize..] {
+        map.set(*block, b'#');
+
+        let start = ivec2(0, 0);
+        let end = ivec2(size.x - 1, size.y - 1);
+
+        let start_cost = manhattan(start, end);
+
+        let mut g_score = Map::<u32>::empty(map.width, map.height, u32::MAX);
+        g_score.set(start, 0);
+
+        let mut f_score = Map::<u32>::empty(map.width, map.height, u32::MAX);
+        f_score.set(start, start_cost);
+
+        let mut open_set = BinaryHeap::new();
+        open_set.push(Cost {
+            pos: start,
+            cost: start_cost,
+        });
+
+        while let Some(Cost { pos: current, .. }) = open_set.pop() {
+            if current == end {
+                continue 'next;
+            }
+
+            for dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
+                let neighbor = current + dir;
+
+                if map.get(neighbor) == b'#' {
+                    continue;
+                }
+
+                let tentative_g_score = g_score.get(current) + 1;
+                if tentative_g_score < g_score.get(neighbor) {
+                    let neighbor_f_score = tentative_g_score + manhattan(neighbor, end);
+
+                    g_score.set(neighbor, tentative_g_score);
+                    f_score.set(neighbor, neighbor_f_score);
+
+                    open_set.push(Cost {
+                        pos: neighbor,
+                        cost: neighbor_f_score,
+                    });
+                }
+            }
+        }
+
+        return *block;
+    }
+
+    panic!("Found no solution");
 }
 
 #[test]
 fn test_b() {
-    assert_eq!(b(TEST_INPUT, ivec2(7, 7)), 0);
-    assert_eq!(b(INPUT, ivec2(70, 70)), 0);
+    assert_eq!(b(TEST_INPUT, ivec2(7, 7), 12), ivec2(6, 1));
+    assert_eq!(b(INPUT, ivec2(70, 70), 1024), ivec2(0, 0));
 }
