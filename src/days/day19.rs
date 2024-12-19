@@ -48,9 +48,9 @@ fn test_a() {
 }
 
 fn count_patterns<'a>(
-    patterns: &[&str],
-    design: &'a str,
-    cache: &mut AdventHashMap<&'a str, i64>,
+    patterns: &[&[u8]],
+    design: &'a [u8],
+    cache: &mut AdventHashMap<&'a [u8], i64>,
 ) -> i64 {
     if design.is_empty() {
         return 1;
@@ -83,10 +83,13 @@ fn count_patterns<'a>(
 pub fn b(input: &str) -> i64 {
     let (pattern_str, design_str) = input.trim().split_once("\n\n").unwrap();
 
-    let mut patterns = pattern_str.split(", ").collect::<Vec<_>>();
+    let mut patterns = pattern_str
+        .split(", ")
+        .map(|s| s.as_bytes())
+        .collect::<Vec<_>>();
     patterns.sort_by_key(|a| a.len());
 
-    let designs = design_str.lines().collect::<Vec<_>>();
+    let designs = design_str.lines().map(|s| s.as_bytes()).collect::<Vec<_>>();
 
     designs
         .iter()
