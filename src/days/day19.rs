@@ -1,8 +1,7 @@
-use fxhash::{FxHashMap, FxHashSet};
+use fxhash::FxHashMap;
 
 pub static INPUT: &str = include_str!("../input/19.txt");
 pub static TEST_INPUT: &str = include_str!("../input/19_test.txt");
-pub static TEST_INPUT_2: &str = include_str!("../input/19_test_2.txt");
 
 fn match_pattern(patterns: &[&str], design: &str) -> bool {
     if design.is_empty() {
@@ -48,37 +47,16 @@ fn test_a() {
     assert_eq!(a(INPUT), 363);
 }
 
-fn match_pattern_except(patterns: &[&str], design: &str, except: &str) -> bool {
+fn count_patterns<'a>(
+    patterns: &[&str],
+    design: &'a str,
+    cache: &mut FxHashMap<&'a str, i64>,
+) -> i64 {
     if design.is_empty() {
-        return true;
+        return 1;
     }
 
-    for pattern in patterns {
-        let pattern_len = pattern.len();
-        let design_len = design.len();
-
-        if pattern_len > design_len {
-            continue;
-        }
-
-        if *pattern == except {
-            continue;
-        }
-
-        if &design[..pattern_len] == *pattern
-            && match_pattern_except(patterns, &design[pattern_len..], except)
-        {
-            return true;
-        }
-    }
-
-    false
-}
-
-fn match_primitive<'a>(patterns: &[&'a str], design: &str) -> Option<Vec<&'a str>> {
-    if design.is_empty() {
-        return Some(Vec::new());
-    }
+    let mut count = 0;
 
     for pattern in patterns {
         let pattern_len = pattern.len();
@@ -89,98 +67,33 @@ fn match_primitive<'a>(patterns: &[&'a str], design: &str) -> Option<Vec<&'a str
         }
 
         if &design[..pattern_len] == *pattern {
-            if let Some(mut result) = match_primitive(patterns, &design[pattern_len..]) {
-                result.insert(0, pattern);
-                return Some(result);
+            let rest = &design[pattern_len..];
+
+            if let Some(c) = cache.get(rest) {
+                count += c;
+            } else {
+                let c = count_patterns(patterns, rest, cache);
+                cache.insert(rest, c);
+                count += c;
             }
         }
     }
 
-    None
-}
-
-fn get_combination<'a>(
-    cc: &mut FxHashMap<(&'a str, &'a str), &'a str>,
-    combined: &FxHashSet<&'a str>,
-    left: &'a str,
-    right: &'a str,
-) -> Option<&'a str> {
-    if let Some(hit) = cc.get(&(left, right)) {
-        return Some(hit);
-    }
-
-    let combination = format!("{left}{right}");
-
-    if let Some(combined) = combined.get(combination.as_str()) {
-        cc.insert((left, right), *combined);
-        return Some(combined);
-    }
-
-    None
-}
-
-fn count_combinations<'a>(
-    cc: &mut FxHashMap<(&'a str, &'a str), &'a str>,
-    combined: &FxHashSet<&'a str>,
-    parts: &[&'a str],
-) -> i64 {
-    let mut combinations = 1;
-
-    println!("{parts:?}");
-
-    for (i, j) in (0..parts.len() - 1).zip(1..parts.len()) {
-        let left = parts[i];
-        let right = parts[j];
-
-        if let Some(combination) = get_combination(cc, combined, left, right) {
-            let mut new = Vec::with_capacity(parts.len());
-            if i != 0 {
-                new.extend_from_slice(&parts[..i]);
-            }
-            new.push(combination);
-            if j + 1 < parts.len() {
-                new.extend_from_slice(&parts[(j + 1)..]);
-            }
-
-            combinations *= 2;
-        }
-    }
-
-    combinations
+    count
 }
 
 pub fn b(input: &str) -> i64 {
     let (pattern_str, design_str) = input.trim().split_once("\n\n").unwrap();
 
-    let patterns = pattern_str.split(", ").collect::<Vec<_>>();
+    let mut patterns = pattern_str.split(", ").collect::<Vec<_>>();
+    patterns.sort_by_key(|a| a.len());
 
-    let mut primitive = Vec::with_capacity(patterns.len());
-    let mut combined = FxHashSet::default();
-    let mut cc = FxHashMap::<(&str, &str), &str>::default();
-
-    for pattern in &patterns {
-        if match_pattern_except(&patterns, pattern, pattern) {
-            combined.insert(*pattern);
-        } else {
-            primitive.push(*pattern);
-        }
-    }
-
-    println!("{primitive:?}");
-    println!("{combined:?}");
-    println!();
+    let mut cache = FxHashMap::default();
 
     let mut possible_designs = 0;
 
     for design in design_str.lines() {
-        if let Some(prim_parts) = match_primitive(&primitive, design) {
-            let count = 1 + count_combinations(&mut cc, &combined, prim_parts.as_slice()) - 1;
-
-            possible_designs += count;
-
-            println!("{design} => {count}");
-            println!();
-        }
+        possible_designs += count_patterns(&patterns, design, &mut cache);
     }
 
     possible_designs
@@ -188,7 +101,6 @@ pub fn b(input: &str) -> i64 {
 
 #[test]
 fn test_b() {
-    //assert_eq!(b(TEST_INPUT_2), 6);
     assert_eq!(b(TEST_INPUT), 16);
-    //assert_eq!(b(INPUT), 0);
+    assert_eq!(b(INPUT), 642535800868438);
 }
