@@ -1,4 +1,4 @@
-use fxhash::FxHashMap;
+use rustc_hash::FxHashMap;
 
 pub static INPUT: &str = include_str!("../input/19.txt");
 pub static TEST_INPUT: &str = include_str!("../input/19_test.txt");
@@ -89,6 +89,7 @@ pub fn b(input: &str) -> i64 {
     patterns.sort_by_key(|a| a.len());
 
     let mut cache = FxHashMap::default();
+    cache.reserve(32_000);
 
     let mut possible_designs = 0;
 

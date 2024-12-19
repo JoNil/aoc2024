@@ -1,4 +1,4 @@
-use fxhash::FxHashMap;
+use rustc_hash::FxHashMap;
 use std::mem;
 
 pub static INPUT: &str = include_str!("../input/11.txt");
