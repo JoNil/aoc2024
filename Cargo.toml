@@ -5,10 +5,10 @@ edition = "2021"
 default-run = "aoc2024"
 
 [dependencies]
+ahash = "0.8"
 bit-vec = "0.8"
 crossterm = "0.28"
 glam = "0.29"
-rustc-hash = "2"
 smallvec = "1.13"
 
 [profile.release]

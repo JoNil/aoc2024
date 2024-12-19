@@ -1,4 +1,4 @@
-use rustc_hash::FxHashMap;
+use crate::AdventHashMap;
 use std::mem;
 
 pub static INPUT: &str = include_str!("../input/11.txt");
@@ -24,9 +24,9 @@ pub fn a(input: &str) -> i64 {
         .trim()
         .split(' ')
         .map(|n| (n.parse().unwrap(), 1))
-        .collect::<FxHashMap<i64, i64>>();
+        .collect::<AdventHashMap<i64, i64>>();
 
-    let mut new_numbers = FxHashMap::default();
+    let mut new_numbers = AdventHashMap::default();
 
     for _round in 0..25 {
         new_numbers.clear();
@@ -72,9 +72,9 @@ pub fn b(input: &str) -> i64 {
         .trim()
         .split(' ')
         .map(|n| (n.parse().unwrap(), 1))
-        .collect::<FxHashMap<i64, i64>>();
+        .collect::<AdventHashMap<i64, i64>>();
 
-    let mut new_numbers = FxHashMap::default();
+    let mut new_numbers = AdventHashMap::default();
 
     for _round in 0..75 {
         new_numbers.clear();

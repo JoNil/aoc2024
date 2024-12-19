@@ -1,4 +1,4 @@
-use rustc_hash::FxHashMap;
+use crate::AdventHashMap;
 
 pub static INPUT: &str = include_str!("../input/19.txt");
 pub static TEST_INPUT: &str = include_str!("../input/19_test.txt");
@@ -50,7 +50,7 @@ fn test_a() {
 fn count_patterns<'a>(
     patterns: &[&str],
     design: &'a str,
-    cache: &mut FxHashMap<&'a str, i64>,
+    cache: &mut AdventHashMap<&'a str, i64>,
 ) -> i64 {
     if design.is_empty() {
         return 1;
@@ -88,7 +88,7 @@ pub fn b(input: &str) -> i64 {
     let mut patterns = pattern_str.split(", ").collect::<Vec<_>>();
     patterns.sort_by_key(|a| a.len());
 
-    let mut cache = FxHashMap::default();
+    let mut cache = AdventHashMap::default();
     cache.reserve(32_000);
 
     let mut possible_designs = 0;
