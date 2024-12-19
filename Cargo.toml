@@ -20,5 +20,5 @@ lto = "fat"
 panic = "abort"
 
 [[bench]]
-name = "benchmark"
+name = "bench"
 harness = false
