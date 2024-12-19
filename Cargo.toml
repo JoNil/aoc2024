@@ -8,7 +8,6 @@ default-run = "aoc2024"
 bit-vec = "0.8"
 crossterm = "0.28"
 glam = "0.29"
-rayon = "1"
 rustc-hash = "2"
 smallvec = "1.13"
 

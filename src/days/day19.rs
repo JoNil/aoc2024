@@ -1,5 +1,4 @@
 use crate::AdventHashMap;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 pub static INPUT: &str = include_str!("../input/19.txt");
 pub static TEST_INPUT: &str = include_str!("../input/19_test.txt");
@@ -90,7 +89,7 @@ pub fn b(input: &str) -> i64 {
     let designs = design_str.lines().collect::<Vec<_>>();
 
     designs
-        .par_iter()
+        .iter()
         .map(|design| {
             let mut cache = AdventHashMap::default();
             count_patterns(&patterns, design, &mut cache)
