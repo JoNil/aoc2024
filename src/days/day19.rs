@@ -1,4 +1,5 @@
 use crate::AdventHashMap;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 pub static INPUT: &str = include_str!("../input/19.txt");
 pub static TEST_INPUT: &str = include_str!("../input/19_test.txt");
@@ -86,16 +87,15 @@ pub fn b(input: &str) -> i64 {
     let mut patterns = pattern_str.split(", ").collect::<Vec<_>>();
     patterns.sort_by_key(|a| a.len());
 
-    let mut cache = AdventHashMap::default();
-    cache.reserve(8192);
+    let designs = design_str.lines().collect::<Vec<_>>();
 
-    let mut possible_designs = 0;
-
-    for design in design_str.lines() {
-        possible_designs += count_patterns(&patterns, design, &mut cache);
-    }
-
-    possible_designs
+    designs
+        .par_iter()
+        .map(|design| {
+            let mut cache = AdventHashMap::default();
+            count_patterns(&patterns, design, &mut cache)
+        })
+        .sum()
 }
 
 #[test]
