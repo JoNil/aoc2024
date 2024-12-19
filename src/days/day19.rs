@@ -142,7 +142,7 @@ fn count_combinations<'a>(
                 new.extend_from_slice(&parts[(j + 1)..]);
             }
 
-            combinations += count_combinations(cc, combined, new.as_slice())
+            combinations *= 2;
         }
     }
 
