@@ -25,7 +25,8 @@ fn match_pattern(patterns: &[&str], design: &str) -> bool {
 pub fn a(input: &str) -> i32 {
     let (pattern_str, design_str) = input.trim().split_once("\n\n").unwrap();
 
-    let patterns = pattern_str.split(", ").collect::<Vec<_>>();
+    let mut patterns = pattern_str.split(", ").collect::<Vec<_>>();
+    patterns.sort_by_key(|a| a.len());
 
     let mut possible_designs = 0;
 
