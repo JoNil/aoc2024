@@ -59,7 +59,7 @@ fn count_patterns(patterns: &[&[u8]], design: &[u8], index: usize, cache: &mut [
 
     let mut count = 0;
 
-    for pattern in patterns {
+    for &pattern in patterns {
         let pattern_len = pattern.len();
         let design_len = design.len();
 
@@ -67,7 +67,7 @@ fn count_patterns(patterns: &[&[u8]], design: &[u8], index: usize, cache: &mut [
             continue;
         }
 
-        if &design[..pattern_len] == *pattern {
+        if &design[..pattern_len] == pattern {
             count += count_patterns(patterns, &design[pattern_len..], index + pattern_len, cache);
         }
     }
