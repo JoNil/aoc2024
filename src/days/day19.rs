@@ -1,5 +1,3 @@
-use crate::AdventHashMap;
-
 pub static INPUT: &str = include_str!("../input/19.txt");
 pub static TEST_INPUT: &str = include_str!("../input/19_test.txt");
 
@@ -47,17 +45,16 @@ fn test_a() {
     assert_eq!(a(INPUT), 363);
 }
 
-fn count_patterns<'a>(
-    patterns: &[&[u8]],
-    design: &'a [u8],
-    cache: &mut AdventHashMap<&'a [u8], i64>,
-) -> i64 {
+fn count_patterns(patterns: &[&[u8]], design: &[u8], index: usize, cache: &mut [i64]) -> i64 {
     if design.is_empty() {
         return 1;
     }
 
-    if let Some(count) = cache.get(design) {
-        return *count;
+    {
+        let res = cache[index];
+        if res != -1 {
+            return res;
+        }
     }
 
     let mut count = 0;
@@ -71,11 +68,11 @@ fn count_patterns<'a>(
         }
 
         if &design[..pattern_len] == *pattern {
-            count += count_patterns(patterns, &design[pattern_len..], cache);
+            count += count_patterns(patterns, &design[pattern_len..], index + pattern_len, cache);
         }
     }
 
-    cache.insert(design, count);
+    cache[index] = count;
 
     count
 }
@@ -94,8 +91,8 @@ pub fn b(input: &str) -> i64 {
     designs
         .iter()
         .map(|design| {
-            let mut cache = AdventHashMap::default();
-            count_patterns(&patterns, design, &mut cache)
+            let mut cache = vec![-1; design.len()];
+            count_patterns(&patterns, design, 0, &mut cache)
         })
         .sum()
 }
