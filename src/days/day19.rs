@@ -56,6 +56,10 @@ fn count_patterns<'a>(
         return 1;
     }
 
+    if let Some(count) = cache.get(design) {
+        return *count;
+    }
+
     let mut count = 0;
 
     for pattern in patterns {
@@ -67,17 +71,11 @@ fn count_patterns<'a>(
         }
 
         if &design[..pattern_len] == *pattern {
-            let rest = &design[pattern_len..];
-
-            if let Some(c) = cache.get(rest) {
-                count += c;
-            } else {
-                let c = count_patterns(patterns, rest, cache);
-                cache.insert(rest, c);
-                count += c;
-            }
+            count += count_patterns(patterns, &design[pattern_len..], cache);
         }
     }
+
+    cache.insert(design, count);
 
     count
 }
@@ -89,7 +87,7 @@ pub fn b(input: &str) -> i64 {
     patterns.sort_by_key(|a| a.len());
 
     let mut cache = AdventHashMap::default();
-    cache.reserve(32_000);
+    cache.reserve(8192);
 
     let mut possible_designs = 0;
 
