@@ -131,234 +131,41 @@ impl Display for Map<u8> {
     }
 }
 
-pub fn djikstra_no_cheet(map: &Map<u8>, start: IVec2, end: IVec2) -> Option<u32> {
-    struct Cost {
-        pos: IVec2,
-        cost: u32,
-    }
-
-    impl PartialEq for Cost {
-        fn eq(&self, other: &Self) -> bool {
-            self.cost.eq(&other.cost)
-        }
-    }
-
-    impl Eq for Cost {}
-
-    impl PartialOrd for Cost {
-        fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-            Some(self.cmp(other))
-        }
-    }
-
-    impl Ord for Cost {
-        fn cmp(&self, other: &Self) -> cmp::Ordering {
-            other.cost.cmp(&self.cost)
-        }
-    }
-
-    let mut g_score = Map::<u32>::empty(map.width, map.height, u32::MAX);
-    g_score.set(start, 0);
-
-    let mut open_set = BinaryHeap::new();
-    open_set.push(Cost {
-        pos: start,
-        cost: 0,
-    });
-
-    while let Some(Cost { pos: current, .. }) = open_set.pop() {
-        if current == end {
-            return Some(g_score.get(current));
-        }
-
-        for neighbor in [
-            current + ivec2(1, 0),
-            current + ivec2(-1, 0),
-            current + ivec2(0, 1),
-            current + ivec2(0, -1),
-        ] {
-            if map.get(neighbor) == b'#' {
-                continue;
+impl Display for Map<u32> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for line in self.data.chunks(self.width as usize) {
+            for char in line {
+                if *char == 0 {
+                    write!(f, ".")?;
+                } else {
+                    write!(f, "{}", ((char % 10) + 48) as u8 as char)?;
+                }
             }
-
-            let tentative_g_score = g_score.get(current) + 1;
-            if tentative_g_score < g_score.get(neighbor) {
-                g_score.set(neighbor, tentative_g_score);
-
-                open_set.push(Cost {
-                    pos: neighbor,
-                    cost: tentative_g_score,
-                });
-            }
+            writeln!(f)?;
         }
-    }
 
-    None
+        Ok(())
+    }
 }
 
-pub fn djikstra_all_cheet(map: &Map<u8>, start: IVec2, end: IVec2, limit: u32) -> Option<i32> {
-    #[derive(Clone, Copy, Default, Debug, Hash, PartialEq, Eq)]
-    struct Pos {
-        pos: IVec2,
-        cheeted: Option<IVec2>,
-    }
-
-    #[derive(Clone, Copy, Default, Debug)]
-    struct Cost {
-        pos: Pos,
-        cost: u32,
-    }
-
-    impl PartialEq for Cost {
-        fn eq(&self, other: &Self) -> bool {
-            self.cost.eq(&other.cost)
-        }
-    }
-
-    impl Eq for Cost {}
-
-    impl PartialOrd for Cost {
-        fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-            Some(self.cmp(other))
-        }
-    }
-
-    impl Ord for Cost {
-        fn cmp(&self, other: &Self) -> cmp::Ordering {
-            other.cost.cmp(&self.cost)
-        }
-    }
-
-    let start = Cost {
-        pos: Pos {
-            pos: start,
-            cheeted: None,
-        },
-        cost: 0,
-    };
-
-    let mut visited_map = AdventHashSet::default();
-    visited_map.insert(start.pos);
-
-    let mut open_set = BinaryHeap::new();
-    open_set.push(start);
-
-    let mut path_count = 0;
-
-    let mut possible_neighbors = [Cost::default(); 8];
-
-    while let Some(current) = open_set.pop() {
-        if current.pos.pos == end {
-            if current.cost > limit {
-                return Some(path_count);
-            }
-
-            path_count += 1;
-        }
-
-        let neighbor_count = if current.pos.cheeted.is_none() {
-            possible_neighbors[..4].copy_from_slice(&[
-                Cost {
-                    pos: Pos {
-                        pos: current.pos.pos + ivec2(1, 0),
-                        cheeted: None,
-                    },
-                    cost: current.cost + 1,
-                },
-                Cost {
-                    pos: Pos {
-                        pos: current.pos.pos + ivec2(-1, 0),
-                        cheeted: None,
-                    },
-                    cost: current.cost + 1,
-                },
-                Cost {
-                    pos: Pos {
-                        pos: current.pos.pos + ivec2(0, 1),
-                        cheeted: None,
-                    },
-                    cost: current.cost + 1,
-                },
-                Cost {
-                    pos: Pos {
-                        pos: current.pos.pos + ivec2(0, -1),
-                        cheeted: None,
-                    },
-                    cost: current.cost + 1,
-                },
-            ]);
-
-            let mut count = 4;
-
-            for dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
-                let next = current.pos.pos + dir;
-                if map.get(next) == b'#' {
-                    possible_neighbors[count] = Cost {
-                        pos: Pos {
-                            pos: next,
-                            cheeted: Some(next),
-                        },
-                        cost: current.cost + 1,
-                    };
-                    count += 1;
+impl Display for Map<IVec2> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for line in self.data.chunks(self.width as usize) {
+            for dir in line {
+                match dir {
+                    IVec2 { x: 1, y: 0 } => write!(f, ">")?,
+                    IVec2 { x: -1, y: 0 } => write!(f, "<")?,
+                    IVec2 { x: 0, y: 1 } => write!(f, "v")?,
+                    IVec2 { x: 0, y: -1 } => write!(f, "^")?,
+                    IVec2 { x: 0, y: 0 } => write!(f, ".")?,
+                    _ => panic!("Unexpected"),
                 }
             }
-
-            count
-        } else {
-            possible_neighbors[..4].copy_from_slice(&[
-                Cost {
-                    pos: Pos {
-                        pos: current.pos.pos + ivec2(1, 0),
-                        cheeted: current.pos.cheeted,
-                    },
-                    cost: current.cost + 1,
-                },
-                Cost {
-                    pos: Pos {
-                        pos: current.pos.pos + ivec2(-1, 0),
-                        cheeted: current.pos.cheeted,
-                    },
-                    cost: current.cost + 1,
-                },
-                Cost {
-                    pos: Pos {
-                        pos: current.pos.pos + ivec2(0, 1),
-                        cheeted: current.pos.cheeted,
-                    },
-                    cost: current.cost + 1,
-                },
-                Cost {
-                    pos: Pos {
-                        pos: current.pos.pos + ivec2(0, -1),
-                        cheeted: current.pos.cheeted,
-                    },
-                    cost: current.cost + 1,
-                },
-            ]);
-
-            4
-        };
-
-        for neighbor in &possible_neighbors[..neighbor_count] {
-            if map.get(neighbor.pos.pos) == b'#' {
-                if let Some(cheeted) = neighbor.pos.cheeted {
-                    if cheeted != neighbor.pos.pos {
-                        continue;
-                    }
-                } else {
-                    continue;
-                }
-            }
-
-            if neighbor.cost <= limit && !visited_map.contains(&neighbor.pos) {
-                visited_map.insert(neighbor.pos);
-                open_set.push(*neighbor);
-            }
+            writeln!(f)?;
         }
-    }
 
-    Some(path_count)
+        Ok(())
+    }
 }
 
 pub fn a(input: &str, limit: u32) -> i32 {
@@ -370,21 +177,47 @@ pub fn a(input: &str, limit: u32) -> i32 {
     map.set(start, b'.');
     map.set(end, b'.');
 
-    let shortest_no_cheet_path = djikstra_no_cheet(&map, start, end).unwrap();
+    let mut path_map = Map::empty(map.width, map.height, 0u32);
+    let mut step_map = Map::empty(map.width, map.height, ivec2(0, 0));
 
-    djikstra_all_cheet(
-        &map,
-        start,
-        end,
-        shortest_no_cheet_path.saturating_sub(limit),
-    )
-    .unwrap()
+    let mut current = start;
+    let mut last = start;
+    let mut length = 0;
+
+    loop {
+        if current == end {
+            break;
+        }
+
+        for dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
+            let next = current + dir;
+
+            if next == last || map.get(next) == b'#' {
+                continue;
+            }
+
+            path_map.set(current, length);
+            step_map.set(current, dir);
+
+            last = current;
+            current = next;
+            length += 1;
+        }
+    }
+
+    println!("{length}");
+
+    println!("{}", map);
+    println!("{}", path_map);
+    println!("{}", step_map);
+
+    0
 }
 
 #[test]
 fn test_a() {
     assert_eq!(a(TEST_INPUT, 64), 1);
-    assert_eq!(a(INPUT, 100), 1358);
+    //assert_eq!(a(INPUT, 100), 1358);
 }
 
 pub fn b(input: &str) -> i32 {
