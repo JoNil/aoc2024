@@ -229,10 +229,6 @@ pub fn djikstra_all_cheet(map: &Map<u8>, start: IVec2, end: IVec2, limit: u32) -
         }
     }
 
-    fn manhattan(a: IVec2, b: IVec2) -> i32 {
-        (a.x - b.x).abs() + (a.y - b.y).abs()
-    }
-
     let start = Cost {
         pos: Pos {
             pos: start,
@@ -253,7 +249,6 @@ pub fn djikstra_all_cheet(map: &Map<u8>, start: IVec2, end: IVec2, limit: u32) -
 
     while let Some(current) = open_set.pop() {
         if current.pos.pos == end {
-            println!("{} > {}", current.cost, limit);
             if current.cost > limit {
                 return Some(path_count);
             }
@@ -301,7 +296,7 @@ pub fn djikstra_all_cheet(map: &Map<u8>, start: IVec2, end: IVec2, limit: u32) -
                     possible_neighbors[count] = Cost {
                         pos: Pos {
                             pos: next,
-                            cheeted: Some(current.pos.pos),
+                            cheeted: Some(next),
                         },
                         cost: current.cost + 1,
                     };
@@ -348,7 +343,7 @@ pub fn djikstra_all_cheet(map: &Map<u8>, start: IVec2, end: IVec2, limit: u32) -
         for neighbor in &possible_neighbors[..neighbor_count] {
             if map.get(neighbor.pos.pos) == b'#' {
                 if let Some(cheeted) = neighbor.pos.cheeted {
-                    if manhattan(cheeted, neighbor.pos.pos) != 1 {
+                    if cheeted != neighbor.pos.pos {
                         continue;
                     }
                 } else {
@@ -356,16 +351,12 @@ pub fn djikstra_all_cheet(map: &Map<u8>, start: IVec2, end: IVec2, limit: u32) -
                 }
             }
 
-            println!("{:?}", neighbor);
-
             if neighbor.cost <= limit && !visited_map.contains(&neighbor.pos) {
                 visited_map.insert(neighbor.pos);
                 open_set.push(*neighbor);
             }
         }
     }
-
-    println!("End");
 
     Some(path_count)
 }
@@ -392,8 +383,8 @@ pub fn a(input: &str, limit: u32) -> i32 {
 
 #[test]
 fn test_a() {
-    assert_eq!(a(TEST_INPUT, 2), 14);
-    //assert_eq!(a(INPUT, 100), 0);
+    assert_eq!(a(TEST_INPUT, 64), 1);
+    assert_eq!(a(INPUT, 100), 1358);
 }
 
 pub fn b(input: &str) -> i32 {
