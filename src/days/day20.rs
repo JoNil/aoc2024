@@ -1,7 +1,6 @@
-use core::str;
-use std::{cmp, collections::BinaryHeap, fmt::Display};
-
+use crate::AdventHashSet;
 use glam::{ivec2, IVec2};
+use std::{cmp, collections::BinaryHeap, fmt::Display, str};
 
 pub static INPUT: &str = include_str!("../input/20.txt");
 pub static TEST_INPUT: &str = include_str!("../input/20_test.txt");
@@ -198,125 +197,62 @@ pub fn djikstra_no_cheet(map: &Map<u8>, start: IVec2, end: IVec2) -> Option<u32>
 }
 
 pub fn djikstra_all_cheet(map: &Map<u8>, start: IVec2, end: IVec2, limit: u32) -> Option<i32> {
-    #[derive(Clone, Copy, Default, Debug)]
+    #[derive(Clone, Copy, Default, Debug, Hash, PartialEq, Eq)]
     struct Pos {
         pos: IVec2,
-        cheeted: i32,
+        cheeted: Option<IVec2>,
+    }
+
+    #[derive(Clone, Copy, Default, Debug)]
+    struct Cost {
+        pos: Pos,
         cost: u32,
     }
 
-    impl PartialEq for Pos {
+    impl PartialEq for Cost {
         fn eq(&self, other: &Self) -> bool {
             self.cost.eq(&other.cost)
         }
     }
 
-    impl Eq for Pos {}
+    impl Eq for Cost {}
 
-    impl PartialOrd for Pos {
+    impl PartialOrd for Cost {
         fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
             Some(self.cmp(other))
         }
     }
 
-    impl Ord for Pos {
+    impl Ord for Cost {
         fn cmp(&self, other: &Self) -> cmp::Ordering {
             other.cost.cmp(&self.cost)
         }
     }
 
-    struct PosMap<T>
-    where
-        T: Copy + Clone + MapDefault,
-    {
-        cheet_0_data: Vec<T>,
-        cheet_1_data: Vec<T>,
-        cheet_2_data: Vec<T>,
-        width: i32,
-        height: i32,
+    fn manhattan(a: IVec2, b: IVec2) -> i32 {
+        (a.x - b.x).abs() + (a.y - b.y).abs()
     }
 
-    impl<T> PosMap<T>
-    where
-        T: Copy + Clone + MapDefault,
-    {
-        fn empty(width: i32, height: i32, initial: T) -> PosMap<T> {
-            PosMap {
-                cheet_0_data: vec![initial; (width * height) as usize],
-                cheet_1_data: vec![initial; (width * height) as usize],
-                cheet_2_data: vec![initial; (width * height) as usize],
-                width,
-                height,
-            }
-        }
-
-        fn get(&self, pos: Pos) -> T {
-            let data = match pos.cheeted {
-                0 => self.cheet_0_data.as_slice(),
-                1 => self.cheet_1_data.as_slice(),
-                2 => self.cheet_2_data.as_slice(),
-                _ => panic!("Bad state"),
-            };
-
-            let pos = pos.pos;
-
-            let index = pos.x + pos.y * self.width;
-
-            if pos.x < 0 || pos.x >= self.width {
-                return T::map_default();
-            }
-
-            if pos.y < 0 || pos.y >= self.height {
-                return T::map_default();
-            }
-
-            data[index as usize]
-        }
-
-        fn set(&mut self, pos: Pos, new: T) -> bool {
-            let data = match pos.cheeted {
-                0 => self.cheet_0_data.as_mut_slice(),
-                1 => self.cheet_1_data.as_mut_slice(),
-                2 => self.cheet_2_data.as_mut_slice(),
-                _ => panic!("Bad state"),
-            };
-
-            let pos = pos.pos;
-
-            let index = pos.x + pos.y * self.width;
-
-            if pos.x < 0 || pos.x >= self.width {
-                return false;
-            }
-
-            if pos.y < 0 || pos.y >= self.height {
-                return false;
-            }
-
-            data[index as usize] = new;
-
-            true
-        }
-    }
-
-    let start = Pos {
-        pos: start,
-        cheeted: 0,
+    let start = Cost {
+        pos: Pos {
+            pos: start,
+            cheeted: None,
+        },
         cost: 0,
     };
 
-    let mut g_score = PosMap::<u32>::empty(map.width, map.height, u32::MAX);
-    g_score.set(start, 0);
+    let mut visited_map = AdventHashSet::default();
+    visited_map.insert(start.pos);
 
     let mut open_set = BinaryHeap::new();
     open_set.push(start);
 
     let mut path_count = 0;
 
-    let mut possible_neighbors = [Pos::default(); 8];
+    let mut possible_neighbors = [Cost::default(); 8];
 
     while let Some(current) = open_set.pop() {
-        if current.pos == end {
+        if current.pos.pos == end {
             println!("{} > {}", current.cost, limit);
             if current.cost > limit {
                 return Some(path_count);
@@ -325,71 +261,83 @@ pub fn djikstra_all_cheet(map: &Map<u8>, start: IVec2, end: IVec2, limit: u32) -
             path_count += 1;
         }
 
-        let neighbor_count = if current.cheeted == 0 {
-            possible_neighbors.copy_from_slice(&[
-                Pos {
-                    pos: current.pos + ivec2(1, 0),
-                    cheeted: 0,
+        let neighbor_count = if current.pos.cheeted.is_none() {
+            possible_neighbors[..4].copy_from_slice(&[
+                Cost {
+                    pos: Pos {
+                        pos: current.pos.pos + ivec2(1, 0),
+                        cheeted: None,
+                    },
                     cost: current.cost + 1,
                 },
-                Pos {
-                    pos: current.pos + ivec2(-1, 0),
-                    cheeted: 0,
+                Cost {
+                    pos: Pos {
+                        pos: current.pos.pos + ivec2(-1, 0),
+                        cheeted: None,
+                    },
                     cost: current.cost + 1,
                 },
-                Pos {
-                    pos: current.pos + ivec2(0, 1),
-                    cheeted: 0,
+                Cost {
+                    pos: Pos {
+                        pos: current.pos.pos + ivec2(0, 1),
+                        cheeted: None,
+                    },
                     cost: current.cost + 1,
                 },
-                Pos {
-                    pos: current.pos + ivec2(0, -1),
-                    cheeted: 0,
-                    cost: current.cost + 1,
-                },
-                Pos {
-                    pos: current.pos + ivec2(1, 0),
-                    cheeted: 1,
-                    cost: current.cost + 1,
-                },
-                Pos {
-                    pos: current.pos + ivec2(-1, 0),
-                    cheeted: 1,
-                    cost: current.cost + 1,
-                },
-                Pos {
-                    pos: current.pos + ivec2(0, 1),
-                    cheeted: 1,
-                    cost: current.cost + 1,
-                },
-                Pos {
-                    pos: current.pos + ivec2(0, -1),
-                    cheeted: 1,
+                Cost {
+                    pos: Pos {
+                        pos: current.pos.pos + ivec2(0, -1),
+                        cheeted: None,
+                    },
                     cost: current.cost + 1,
                 },
             ]);
 
-            8
+            let mut count = 4;
+
+            for dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
+                let next = current.pos.pos + dir;
+                if map.get(next) == b'#' {
+                    possible_neighbors[count] = Cost {
+                        pos: Pos {
+                            pos: next,
+                            cheeted: Some(current.pos.pos),
+                        },
+                        cost: current.cost + 1,
+                    };
+                    count += 1;
+                }
+            }
+
+            count
         } else {
-            possible_neighbors[0..4].copy_from_slice(&[
-                Pos {
-                    pos: current.pos + ivec2(1, 0),
-                    cheeted: 2,
+            possible_neighbors[..4].copy_from_slice(&[
+                Cost {
+                    pos: Pos {
+                        pos: current.pos.pos + ivec2(1, 0),
+                        cheeted: current.pos.cheeted,
+                    },
                     cost: current.cost + 1,
                 },
-                Pos {
-                    pos: current.pos + ivec2(-1, 0),
-                    cheeted: 2,
+                Cost {
+                    pos: Pos {
+                        pos: current.pos.pos + ivec2(-1, 0),
+                        cheeted: current.pos.cheeted,
+                    },
                     cost: current.cost + 1,
                 },
-                Pos {
-                    pos: current.pos + ivec2(0, 1),
-                    cheeted: 2,
+                Cost {
+                    pos: Pos {
+                        pos: current.pos.pos + ivec2(0, 1),
+                        cheeted: current.pos.cheeted,
+                    },
                     cost: current.cost + 1,
                 },
-                Pos {
-                    pos: current.pos + ivec2(0, -1),
-                    cheeted: 2,
+                Cost {
+                    pos: Pos {
+                        pos: current.pos.pos + ivec2(0, -1),
+                        cheeted: current.pos.cheeted,
+                    },
                     cost: current.cost + 1,
                 },
             ]);
@@ -398,14 +346,20 @@ pub fn djikstra_all_cheet(map: &Map<u8>, start: IVec2, end: IVec2, limit: u32) -
         };
 
         for neighbor in &possible_neighbors[..neighbor_count] {
-            println!("{:?}", neighbor);
-
-            if neighbor.cheeted != 1 && map.get(neighbor.pos) == b'#' {
-                continue;
+            if map.get(neighbor.pos.pos) == b'#' {
+                if let Some(cheeted) = neighbor.pos.cheeted {
+                    if manhattan(cheeted, current.pos.pos) != 1 {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
             }
 
-            if neighbor.cost < limit && neighbor.cost < g_score.get(*neighbor) {
-                g_score.set(*neighbor, neighbor.cost);
+            println!("{:?}", neighbor);
+
+            if neighbor.cost <= limit && !visited_map.contains(&neighbor.pos) {
+                visited_map.insert(neighbor.pos);
                 open_set.push(*neighbor);
             }
         }
