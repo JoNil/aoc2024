@@ -5,6 +5,7 @@ edition = "2021"
 default-run = "aoc2024"
 
 [dependencies]
+aho-corasick = "1"
 bit-vec = "0.8"
 crossterm = "0.28"
 glam = "0.29"

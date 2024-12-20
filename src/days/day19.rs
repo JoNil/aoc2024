@@ -1,3 +1,5 @@
+use aho_corasick::AhoCorasick;
+
 pub static INPUT: &str = include_str!("../input/19.txt");
 pub static TEST_INPUT: &str = include_str!("../input/19_test.txt");
 
@@ -45,56 +47,34 @@ fn test_a() {
     assert_eq!(a(INPUT), 363);
 }
 
-fn count_patterns(patterns: &[&[u8]], design: &[u8], index: usize, cache: &mut [i64]) -> i64 {
-    if design.is_empty() {
-        return 1;
-    }
-
-    {
-        let res = cache[index];
-        if res != -1 {
-            return res;
-        }
-    }
-
-    let mut count = 0;
-
-    for &pattern in patterns {
-        let pattern_len = pattern.len();
-        let design_len = design.len();
-
-        if pattern_len > design_len {
-            continue;
-        }
-
-        if &design[..pattern_len] == pattern {
-            count += count_patterns(patterns, &design[pattern_len..], index + pattern_len, cache);
-        }
-    }
-
-    cache[index] = count;
-
-    count
-}
-
 pub fn b(input: &str) -> i64 {
     let (pattern_str, design_str) = input.trim().split_once("\n\n").unwrap();
 
-    let mut patterns = pattern_str
+    let patterns = pattern_str
         .split(", ")
         .map(|s| s.as_bytes())
         .collect::<Vec<_>>();
-    patterns.sort_by_key(|a| a.len());
 
-    let designs = design_str.lines().map(|s| s.as_bytes()).collect::<Vec<_>>();
+    let mut possible_patterns = 0;
 
-    designs
-        .iter()
-        .map(|design| {
-            let mut cache = vec![-1; design.len()];
-            count_patterns(&patterns, design, 0, &mut cache)
-        })
-        .sum()
+    let ac = AhoCorasick::new(patterns).unwrap();
+
+    let mut hits = Vec::new();
+
+    for design in design_str.lines().map(|s| s.as_bytes()) {
+        hits.fill(0);
+        hits.resize(design.len() + 1, 0);
+
+        hits[0] = 1;
+
+        for hit in ac.find_overlapping_iter(design) {
+            hits[hit.end()] += hits[hit.start()];
+        }
+
+        possible_patterns += hits[design.len()];
+    }
+
+    possible_patterns
 }
 
 #[test]
