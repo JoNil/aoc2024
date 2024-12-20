@@ -348,7 +348,7 @@ pub fn djikstra_all_cheet(map: &Map<u8>, start: IVec2, end: IVec2, limit: u32) -
         for neighbor in &possible_neighbors[..neighbor_count] {
             if map.get(neighbor.pos.pos) == b'#' {
                 if let Some(cheeted) = neighbor.pos.cheeted {
-                    if manhattan(cheeted, current.pos.pos) != 1 {
+                    if manhattan(cheeted, neighbor.pos.pos) != 1 {
                         continue;
                     }
                 } else {
