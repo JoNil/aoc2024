@@ -294,8 +294,6 @@ pub fn b(input: &str, limit: u32) -> i32 {
     let mut possible_skips = 0;
     let mut pos = start;
 
-    let mut skips = [0; 200];
-
     loop {
         let dir = step_map.get(pos);
         let pos_count = path_map.get(pos);
@@ -307,8 +305,7 @@ pub fn b(input: &str, limit: u32) -> i32 {
             let skip_len =
                 skip_count as i32 - pos_count as i32 - skip_dir.x.abs() - skip_dir.y.abs();
 
-            if skip_count > 0 && skip_len % 2 == 0 && skip_len > limit as i32 {
-                skips[skip_len as usize] += 1;
+            if skip_count > 0 && skip_len >= limit as i32 {
                 possible_skips += 1;
             }
         }
@@ -320,17 +317,11 @@ pub fn b(input: &str, limit: u32) -> i32 {
         }
     }
 
-    for (i, s) in skips.iter().enumerate() {
-        if *s > 0 {
-            println!("{s} {i}");
-        }
-    }
-
     possible_skips
 }
 
 #[test]
 fn test_b() {
     assert_eq!(b(TEST_INPUT, 50), 285);
-    //assert_eq!(b(INPUT, 100), 0);
+    assert_eq!(b(INPUT, 100), 1005856);
 }
