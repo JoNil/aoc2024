@@ -18,3 +18,4 @@ pub mod day17;
 pub mod day18;
 pub mod day14_simd;
 pub mod day19;
+pub mod day20;
