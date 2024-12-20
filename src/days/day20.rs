@@ -132,131 +132,33 @@ impl Display for Map<u8> {
     }
 }
 
-#[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
-struct Pos {
-    pos: IVec2,
-    cheeted: bool,
-}
-
-impl Pos {
-    fn new(pos: IVec2) -> Pos {
-        Pos {
-            pos,
-            cheeted: false,
-        }
+pub fn djikstra_no_cheet(map: &Map<u8>, start: IVec2, end: IVec2) -> Option<u32> {
+    struct Cost {
+        pos: IVec2,
+        cost: u32,
     }
-}
 
-impl MapDefault for Pos {
-    fn map_default() -> Self {
-        Pos {
-            pos: ivec2(0, 0),
-            cheeted: false,
-        }
-    }
-}
-
-struct PosMap<T>
-where
-    T: Copy + Clone + MapDefault,
-{
-    data: Vec<T>,
-    cheeted_data: Vec<T>,
-    width: i32,
-    height: i32,
-}
-
-impl<T> PosMap<T>
-where
-    T: Copy + Clone + MapDefault,
-{
-    fn empty(width: i32, height: i32, initial: T) -> PosMap<T> {
-        PosMap {
-            data: vec![initial; (width * height) as usize],
-            cheeted_data: vec![initial; (width * height) as usize],
-            width,
-            height,
+    impl PartialEq for Cost {
+        fn eq(&self, other: &Self) -> bool {
+            self.cost.eq(&other.cost)
         }
     }
 
-    fn get(&self, pos: Pos) -> T {
-        let data = if pos.cheeted {
-            self.cheeted_data.as_slice()
-        } else {
-            self.data.as_slice()
-        };
+    impl Eq for Cost {}
 
-        let pos = pos.pos;
-
-        let index = pos.x + pos.y * self.width;
-
-        if pos.x < 0 || pos.x >= self.width {
-            return T::map_default();
+    impl PartialOrd for Cost {
+        fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+            Some(self.cmp(other))
         }
+    }
 
-        if pos.y < 0 || pos.y >= self.height {
-            return T::map_default();
+    impl Ord for Cost {
+        fn cmp(&self, other: &Self) -> cmp::Ordering {
+            other.cost.cmp(&self.cost)
         }
-
-        data[index as usize]
     }
 
-    fn set(&mut self, pos: Pos, new: T) -> bool {
-        let data = if pos.cheeted {
-            self.cheeted_data.as_mut_slice()
-        } else {
-            self.data.as_mut_slice()
-        };
-
-        let pos = pos.pos;
-        let index = pos.x + pos.y * self.width;
-
-        if pos.x < 0 || pos.x >= self.width {
-            return false;
-        }
-
-        if pos.y < 0 || pos.y >= self.height {
-            return false;
-        }
-
-        data[index as usize] = new;
-
-        true
-    }
-}
-
-struct Cost {
-    pos: Pos,
-    cost: u32,
-}
-
-impl PartialEq for Cost {
-    fn eq(&self, other: &Self) -> bool {
-        self.cost.eq(&other.cost)
-    }
-}
-
-impl Eq for Cost {}
-
-impl PartialOrd for Cost {
-    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Cost {
-    fn cmp(&self, other: &Self) -> cmp::Ordering {
-        other.cost.cmp(&self.cost)
-    }
-}
-
-pub fn djikstra_no_cheet(map: &Map<u8>, start: IVec2, end: IVec2) -> Option<i32> {
-    let start = Pos {
-        pos: start,
-        cheeted: false,
-    };
-
-    let mut g_score = PosMap::<u32>::empty(map.width, map.height, u32::MAX);
+    let mut g_score = Map::<u32>::empty(map.width, map.height, u32::MAX);
     g_score.set(start, 0);
 
     let mut open_set = BinaryHeap::new();
@@ -266,29 +168,17 @@ pub fn djikstra_no_cheet(map: &Map<u8>, start: IVec2, end: IVec2) -> Option<i32>
     });
 
     while let Some(Cost { pos: current, .. }) = open_set.pop() {
-        if current.pos == end {
-            return Some(g_score.get(current) as i32);
+        if current == end {
+            return Some(g_score.get(current));
         }
 
         for neighbor in [
-            Pos {
-                pos: current.pos + ivec2(1, 0),
-                cheeted: current.cheeted,
-            },
-            Pos {
-                pos: current.pos + ivec2(-1, 0),
-                cheeted: current.cheeted,
-            },
-            Pos {
-                pos: current.pos + ivec2(0, 1),
-                cheeted: current.cheeted,
-            },
-            Pos {
-                pos: current.pos + ivec2(0, -1),
-                cheeted: current.cheeted,
-            },
+            current + ivec2(1, 0),
+            current + ivec2(-1, 0),
+            current + ivec2(0, 1),
+            current + ivec2(0, -1),
         ] {
-            if map.get(neighbor.pos) == b'#' {
+            if map.get(neighbor) == b'#' {
                 continue;
             }
 
@@ -307,6 +197,88 @@ pub fn djikstra_no_cheet(map: &Map<u8>, start: IVec2, end: IVec2) -> Option<i32>
     None
 }
 
+pub fn djikstra_all_cheet(map: &Map<u8>, start: IVec2, end: IVec2, limit: u32) -> Option<i32> {
+    #[derive(Clone, Copy, Default, Debug)]
+    struct Pos {
+        pos: IVec2,
+        cheeted: i32,
+        cost: u32,
+    }
+
+    impl PartialEq for Pos {
+        fn eq(&self, other: &Self) -> bool {
+            self.cost.eq(&other.cost)
+        }
+    }
+
+    impl Eq for Pos {}
+
+    impl PartialOrd for Pos {
+        fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+            Some(self.cmp(other))
+        }
+    }
+
+    impl Ord for Pos {
+        fn cmp(&self, other: &Self) -> cmp::Ordering {
+            other.cost.cmp(&self.cost)
+        }
+    }
+
+    let start = Pos {
+        pos: start,
+        cheeted: 0,
+        cost: 0,
+    };
+
+    let mut open_set = BinaryHeap::new();
+    open_set.push(start);
+
+    let mut path_count = 0;
+
+    let possible_neighbors = [Pos::default(); 8];
+
+    while let Some(current) = open_set.pop() {
+        if current.pos == end {
+            path_count += 1;
+            if current.cost < limit {
+                return Some(path_count);
+            }
+        }
+
+        /*
+        Pos {
+            pos: current.pos + ivec2(1, 0),
+            cheeted: current.cheeted,
+        },
+        Pos {
+            pos: current.pos + ivec2(-1, 0),
+            cheeted: current.cheeted,
+        },
+        Pos {
+            pos: current.pos + ivec2(0, 1),
+            cheeted: current.cheeted,
+        },
+        Pos {
+            pos: current.pos + ivec2(0, -1),
+            cheeted: current.cheeted,
+        },
+        */
+
+        for neighbor in &possible_neighbors {
+            if map.get(neighbor.pos) == b'#' {
+                continue;
+            }
+
+            if neighbor.cost < limit {
+                open_set.push(*neighbor);
+            }
+        }
+    }
+
+    Some(path_count)
+}
+
 pub fn a(input: &str) -> i32 {
     let mut map = Map::new(input);
 
@@ -318,9 +290,9 @@ pub fn a(input: &str) -> i32 {
 
     let shortest_no_cheet_path = djikstra_no_cheet(&map, start, end).unwrap();
 
-    println!("shortest_no_cheet_path {shortest_no_cheet_path}");
+    //djikstra_all_cheet(&map, start, end, shortest_no_cheet_path.saturating_sub(100)).unwrap()
 
-    0
+    shortest_no_cheet_path as _
 }
 
 #[test]
