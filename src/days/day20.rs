@@ -177,7 +177,7 @@ pub fn a(input: &str, limit: u32) -> i32 {
     map.set(end, b'.');
 
     let mut path_map = Map::empty(map.width, map.height, 0u32);
-    let mut step_map = Map::empty(map.width, map.height, ivec2(0, 0));
+    let mut path = Vec::with_capacity((map.width * map.height) as usize / 2);
     let mut length = 0;
 
     {
@@ -187,6 +187,7 @@ pub fn a(input: &str, limit: u32) -> i32 {
         loop {
             if current == end {
                 path_map.set(current, length + 1);
+                path.push((current, length + 1));
                 break;
             }
 
@@ -198,7 +199,7 @@ pub fn a(input: &str, limit: u32) -> i32 {
                 }
 
                 path_map.set(current, length);
-                step_map.set(current, dir);
+                path.push((current, length));
 
                 last = current;
                 current = next;
@@ -208,12 +209,8 @@ pub fn a(input: &str, limit: u32) -> i32 {
     }
 
     let mut possible_skips = 0;
-    let mut pos = start;
 
-    loop {
-        let dir = step_map.get(pos);
-        let pos_count = path_map.get(pos);
-
+    for (pos, pos_count) in path {
         for skip_dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
             let skip_pos = pos + skip_dir;
             if map.get(skip_pos) == b'#' {
@@ -222,12 +219,6 @@ pub fn a(input: &str, limit: u32) -> i32 {
                     possible_skips += 1;
                 }
             }
-        }
-
-        pos += dir;
-
-        if pos == end {
-            break;
         }
     }
 
@@ -261,7 +252,7 @@ pub fn b(input: &str, limit: u32) -> i32 {
     map.set(end, b'.');
 
     let mut path_map = Map::empty(map.width, map.height, 0u32);
-    let mut step_map = Map::empty(map.width, map.height, ivec2(0, 0));
+    let mut path = Vec::with_capacity((map.width * map.height) as usize / 2);
     let mut length = 0;
 
     {
@@ -271,6 +262,7 @@ pub fn b(input: &str, limit: u32) -> i32 {
         loop {
             if current == end {
                 path_map.set(current, length + 1);
+                path.push((current, length + 1));
                 break;
             }
 
@@ -282,7 +274,7 @@ pub fn b(input: &str, limit: u32) -> i32 {
                 }
 
                 path_map.set(current, length);
-                step_map.set(current, dir);
+                path.push((current, length));
 
                 last = current;
                 current = next;
@@ -292,12 +284,8 @@ pub fn b(input: &str, limit: u32) -> i32 {
     }
 
     let mut possible_skips = 0;
-    let mut pos = start;
 
-    loop {
-        let dir = step_map.get(pos);
-        let pos_count = path_map.get(pos);
-
+    for (pos, pos_count) in path {
         for skip_dir in manhattan_iter(20) {
             let skip_pos = pos + skip_dir;
             let skip_count = path_map.get(skip_pos);
@@ -308,12 +296,6 @@ pub fn b(input: &str, limit: u32) -> i32 {
             if skip_count > 0 && skip_len >= limit as i32 {
                 possible_skips += 1;
             }
-        }
-
-        pos += dir;
-
-        if pos == end {
-            break;
         }
     }
 
