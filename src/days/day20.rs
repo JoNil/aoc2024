@@ -292,8 +292,6 @@ pub fn djikstra_no_cheet(map: &Map<u8>, start: IVec2, end: IVec2) -> Option<i32>
                 continue;
             }
 
-            viz_map.set(current.pos, b'O');
-
             let tentative_g_score = g_score.get(current) + 1;
             if tentative_g_score < g_score.get(neighbor) {
                 g_score.set(neighbor, tentative_g_score);
@@ -314,8 +312,6 @@ pub fn a(input: &str) -> i32 {
 
     let start = map.find_first(b'S').unwrap();
     let end = map.find_first(b'E').unwrap();
-
-    println!("{start}, {end}");
 
     map.set(start, b'.');
     map.set(end, b'.');
