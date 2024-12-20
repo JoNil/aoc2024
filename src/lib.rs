@@ -4,5 +4,5 @@
 pub mod days;
 pub use days::*;
 
-type AdventHashMap<K, V> = rustc_hash::FxHashMap<K, V>;
-type AdventHashSet<K> = rustc_hash::FxHashSet<K>;
+pub type AdventHashMap<K, V> = rustc_hash::FxHashMap<K, V>;
+pub type AdventHashSet<K> = rustc_hash::FxHashSet<K>;

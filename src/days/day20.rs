@@ -1,6 +1,5 @@
-use crate::AdventHashSet;
 use glam::{ivec2, IVec2};
-use std::{cmp, collections::BinaryHeap, fmt::Display, str};
+use std::{fmt::Display, str};
 
 pub static INPUT: &str = include_str!("../input/20.txt");
 pub static TEST_INPUT: &str = include_str!("../input/20_test.txt");
@@ -23,7 +22,7 @@ impl MapDefault for u8 {
 
 impl MapDefault for u32 {
     fn map_default() -> Self {
-        u32::MAX
+        0
     }
 }
 
@@ -179,45 +178,66 @@ pub fn a(input: &str, limit: u32) -> i32 {
 
     let mut path_map = Map::empty(map.width, map.height, 0u32);
     let mut step_map = Map::empty(map.width, map.height, ivec2(0, 0));
-
-    let mut current = start;
-    let mut last = start;
     let mut length = 0;
 
-    loop {
-        if current == end {
-            break;
-        }
+    {
+        let mut current = start;
+        let mut last = start;
 
-        for dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
-            let next = current + dir;
-
-            if next == last || map.get(next) == b'#' {
-                continue;
+        loop {
+            if current == end {
+                path_map.set(current, length + 1);
+                break;
             }
 
-            path_map.set(current, length);
-            step_map.set(current, dir);
+            for dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
+                let next = current + dir;
 
-            last = current;
-            current = next;
-            length += 1;
+                if next == last || map.get(next) == b'#' {
+                    continue;
+                }
+
+                path_map.set(current, length);
+                step_map.set(current, dir);
+
+                last = current;
+                current = next;
+                length += 1;
+            }
         }
     }
 
-    println!("{length}");
+    let mut possible_skips = 0;
+    let mut pos = start;
 
-    println!("{}", map);
-    println!("{}", path_map);
-    println!("{}", step_map);
+    loop {
+        let dir = step_map.get(pos);
+        let pos_count = path_map.get(pos);
 
-    0
+        for skip_dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
+            let skip_pos = pos + skip_dir;
+            if map.get(skip_pos) == b'#' {
+                let skip_count = path_map.get(pos + 2 * skip_dir);
+                if skip_count > 0 && skip_count as i32 - pos_count as i32 > limit as i32 {
+                    possible_skips += 1;
+                }
+            }
+        }
+
+        pos += dir;
+
+        if pos == end {
+            break;
+        }
+    }
+
+    possible_skips
 }
 
 #[test]
 fn test_a() {
     assert_eq!(a(TEST_INPUT, 64), 1);
-    //assert_eq!(a(INPUT, 100), 1358);
+    assert_eq!(a(INPUT, 100), 1358);
 }
 
 pub fn b(input: &str) -> i32 {
