@@ -240,12 +240,12 @@ fn test_a() {
     assert_eq!(a(INPUT, 100), 1358);
 }
 
-pub fn b(input: &str) -> i32 {
+pub fn b(input: &str, limit: u32) -> i32 {
     0
 }
 
 #[test]
 fn test_b() {
-    assert_eq!(b(TEST_INPUT), 0);
-    assert_eq!(b(INPUT), 0);
+    assert_eq!(b(TEST_INPUT, 76), 3);
+    assert_eq!(b(INPUT, 100), 0);
 }
