@@ -236,6 +236,8 @@ pub fn a(input: &str, limit: u32) -> i32 {
 
 #[test]
 fn test_a() {
+    assert_eq!(a(TEST_INPUT, 2), 44);
+    assert_eq!(a(TEST_INPUT, 4), 30);
     assert_eq!(a(TEST_INPUT, 64), 1);
     assert_eq!(a(INPUT, 100), 1358);
 }
