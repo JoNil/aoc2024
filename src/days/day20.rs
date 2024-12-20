@@ -54,6 +54,7 @@ where
         }
     }
 
+    #[inline(always)]
     pub fn get(&self, pos: IVec2) -> T {
         let index = pos.x + pos.y * self.width;
 
@@ -65,9 +66,10 @@ where
             return T::map_default();
         }
 
-        self.data[index as usize]
+        unsafe { *self.data.get_unchecked(index as usize) }
     }
 
+    #[inline(always)]
     pub fn set(&mut self, pos: IVec2, new: T) -> bool {
         let index = pos.x + pos.y * self.width;
 
@@ -79,7 +81,9 @@ where
             return false;
         }
 
-        self.data[index as usize] = new;
+        unsafe {
+            *self.data.get_unchecked_mut(index as usize) = new;
+        }
 
         true
     }
@@ -87,9 +91,21 @@ where
 
 impl Map<u8> {
     pub fn new(input: &str) -> Map<u8> {
-        let data = input.replace('\n', "").into_bytes();
+        let mut data = Vec::with_capacity(input.len());
+        for byte in input.as_bytes() {
+            if *byte != b'\n' {
+                data.push(*byte);
+            }
+        }
 
-        let mut width: i32 = 0;
+        let mut width = 0;
+
+        for (i, byte) in input.as_bytes().iter().enumerate() {
+            if *byte == b'\n' {
+                width = i as i32;
+                break;
+            }
+        }
 
         if let Some(line) = input.lines().next() {
             width = line.len() as i32;
@@ -285,8 +301,10 @@ pub fn b(input: &str, limit: u32) -> i32 {
 
     let mut possible_skips = 0;
 
+    let offsets = manhattan_iter(20).collect::<Vec<_>>();
+
     for (pos, pos_count) in path {
-        for skip_dir in manhattan_iter(20) {
+        for skip_dir in &offsets {
             let skip_pos = pos + skip_dir;
             let skip_count = path_map.get(skip_pos);
 
