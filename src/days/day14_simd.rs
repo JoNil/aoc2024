@@ -125,18 +125,20 @@ unsafe fn b_avx_512(input: &str, size: (i32, i32)) -> i32 {
             let index_x = _mm512_add_epi16(index_y, new_x);
             _mm512_storeu_epi16(index.as_mut_ptr(), index_x);
 
-            for ii in 0..LANES {
-                let i = i + ii;
-                if i >= count {
-                    break;
-                }
-                let index = *index.get_unchecked(ii);
+            if !conflict {
+                for ii in 0..LANES {
+                    let i = i + ii;
+                    if i >= count {
+                        break;
+                    }
+                    let index = *index.get_unchecked(ii);
 
-                let robot_in_pos = *map.data.get_unchecked(index as usize);
-                if robot_in_pos > 0 {
-                    conflict = true;
+                    let robot_in_pos = *map.data.get_unchecked(index as usize);
+                    if robot_in_pos > 0 {
+                        conflict = true;
+                    }
+                    *map.data.get_unchecked_mut(index as usize) = 1;
                 }
-                *map.data.get_unchecked_mut(index as usize) = 1;
             }
         }
 
