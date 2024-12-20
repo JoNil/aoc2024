@@ -240,12 +240,95 @@ fn test_a() {
     assert_eq!(a(INPUT, 100), 1358);
 }
 
+fn manhattan_iter(dist: i32) -> impl Iterator<Item = IVec2> {
+    (-dist..=dist).flat_map(move |x| {
+        let max_y = dist - x.abs();
+        (-max_y..=max_y)
+            .map(move |y| IVec2::new(x, y))
+            .filter(|p| *p != ivec2(0, 0))
+    })
+}
+
 pub fn b(input: &str, limit: u32) -> i32 {
-    0
+    let mut map = Map::new(input);
+
+    let start = map.find_first(b'S').unwrap();
+    let end = map.find_first(b'E').unwrap();
+
+    map.set(start, b'.');
+    map.set(end, b'.');
+
+    let mut path_map = Map::empty(map.width, map.height, 0u32);
+    let mut step_map = Map::empty(map.width, map.height, ivec2(0, 0));
+    let mut length = 0;
+
+    {
+        let mut current = start;
+        let mut last = start;
+
+        loop {
+            if current == end {
+                path_map.set(current, length + 1);
+                break;
+            }
+
+            for dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
+                let next = current + dir;
+
+                if next == last || map.get(next) == b'#' {
+                    continue;
+                }
+
+                path_map.set(current, length);
+                step_map.set(current, dir);
+
+                last = current;
+                current = next;
+                length += 1;
+            }
+        }
+    }
+
+    let mut possible_skips = 0;
+    let mut pos = start;
+
+    let mut skips = [0; 200];
+
+    loop {
+        let dir = step_map.get(pos);
+        let pos_count = path_map.get(pos);
+
+        for skip_dir in manhattan_iter(20) {
+            let skip_pos = pos + skip_dir;
+            let skip_count = path_map.get(skip_pos);
+
+            let skip_len =
+                skip_count as i32 - pos_count as i32 - skip_dir.x.abs() - skip_dir.y.abs();
+
+            if skip_count > 0 && skip_len % 2 == 0 && skip_len > limit as i32 {
+                skips[skip_len as usize] += 1;
+                possible_skips += 1;
+            }
+        }
+
+        pos += dir;
+
+        if pos == end {
+            break;
+        }
+    }
+
+    for (i, s) in skips.iter().enumerate() {
+        if *s > 0 {
+            println!("{s} {i}");
+        }
+    }
+
+    possible_skips
 }
 
 #[test]
 fn test_b() {
-    assert_eq!(b(TEST_INPUT, 76), 3);
-    assert_eq!(b(INPUT, 100), 0);
+    assert_eq!(b(TEST_INPUT, 50), 285);
+    //assert_eq!(b(INPUT, 100), 0);
 }
