@@ -225,61 +225,198 @@ pub fn djikstra_all_cheet(map: &Map<u8>, start: IVec2, end: IVec2, limit: u32) -
         }
     }
 
+    struct PosMap<T>
+    where
+        T: Copy + Clone + MapDefault,
+    {
+        cheet_0_data: Vec<T>,
+        cheet_1_data: Vec<T>,
+        cheet_2_data: Vec<T>,
+        width: i32,
+        height: i32,
+    }
+
+    impl<T> PosMap<T>
+    where
+        T: Copy + Clone + MapDefault,
+    {
+        fn empty(width: i32, height: i32, initial: T) -> PosMap<T> {
+            PosMap {
+                cheet_0_data: vec![initial; (width * height) as usize],
+                cheet_1_data: vec![initial; (width * height) as usize],
+                cheet_2_data: vec![initial; (width * height) as usize],
+                width,
+                height,
+            }
+        }
+
+        fn get(&self, pos: Pos) -> T {
+            let data = match pos.cheeted {
+                0 => self.cheet_0_data.as_slice(),
+                1 => self.cheet_1_data.as_slice(),
+                2 => self.cheet_2_data.as_slice(),
+                _ => panic!("Bad state"),
+            };
+
+            let pos = pos.pos;
+
+            let index = pos.x + pos.y * self.width;
+
+            if pos.x < 0 || pos.x >= self.width {
+                return T::map_default();
+            }
+
+            if pos.y < 0 || pos.y >= self.height {
+                return T::map_default();
+            }
+
+            data[index as usize]
+        }
+
+        fn set(&mut self, pos: Pos, new: T) -> bool {
+            let data = match pos.cheeted {
+                0 => self.cheet_0_data.as_mut_slice(),
+                1 => self.cheet_1_data.as_mut_slice(),
+                2 => self.cheet_2_data.as_mut_slice(),
+                _ => panic!("Bad state"),
+            };
+
+            let pos = pos.pos;
+
+            let index = pos.x + pos.y * self.width;
+
+            if pos.x < 0 || pos.x >= self.width {
+                return false;
+            }
+
+            if pos.y < 0 || pos.y >= self.height {
+                return false;
+            }
+
+            data[index as usize] = new;
+
+            true
+        }
+    }
+
     let start = Pos {
         pos: start,
         cheeted: 0,
         cost: 0,
     };
 
+    let mut g_score = PosMap::<u32>::empty(map.width, map.height, u32::MAX);
+    g_score.set(start, 0);
+
     let mut open_set = BinaryHeap::new();
     open_set.push(start);
 
     let mut path_count = 0;
 
-    let possible_neighbors = [Pos::default(); 8];
+    let mut possible_neighbors = [Pos::default(); 8];
 
     while let Some(current) = open_set.pop() {
         if current.pos == end {
-            path_count += 1;
-            if current.cost < limit {
+            println!("{} > {}", current.cost, limit);
+            if current.cost > limit {
                 return Some(path_count);
             }
+
+            path_count += 1;
         }
 
-        /*
-        Pos {
-            pos: current.pos + ivec2(1, 0),
-            cheeted: current.cheeted,
-        },
-        Pos {
-            pos: current.pos + ivec2(-1, 0),
-            cheeted: current.cheeted,
-        },
-        Pos {
-            pos: current.pos + ivec2(0, 1),
-            cheeted: current.cheeted,
-        },
-        Pos {
-            pos: current.pos + ivec2(0, -1),
-            cheeted: current.cheeted,
-        },
-        */
+        let neighbor_count = if current.cheeted == 0 {
+            possible_neighbors.copy_from_slice(&[
+                Pos {
+                    pos: current.pos + ivec2(1, 0),
+                    cheeted: 0,
+                    cost: current.cost + 1,
+                },
+                Pos {
+                    pos: current.pos + ivec2(-1, 0),
+                    cheeted: 0,
+                    cost: current.cost + 1,
+                },
+                Pos {
+                    pos: current.pos + ivec2(0, 1),
+                    cheeted: 0,
+                    cost: current.cost + 1,
+                },
+                Pos {
+                    pos: current.pos + ivec2(0, -1),
+                    cheeted: 0,
+                    cost: current.cost + 1,
+                },
+                Pos {
+                    pos: current.pos + ivec2(1, 0),
+                    cheeted: 1,
+                    cost: current.cost + 1,
+                },
+                Pos {
+                    pos: current.pos + ivec2(-1, 0),
+                    cheeted: 1,
+                    cost: current.cost + 1,
+                },
+                Pos {
+                    pos: current.pos + ivec2(0, 1),
+                    cheeted: 1,
+                    cost: current.cost + 1,
+                },
+                Pos {
+                    pos: current.pos + ivec2(0, -1),
+                    cheeted: 1,
+                    cost: current.cost + 1,
+                },
+            ]);
 
-        for neighbor in &possible_neighbors {
-            if map.get(neighbor.pos) == b'#' {
+            8
+        } else {
+            possible_neighbors[0..4].copy_from_slice(&[
+                Pos {
+                    pos: current.pos + ivec2(1, 0),
+                    cheeted: 2,
+                    cost: current.cost + 1,
+                },
+                Pos {
+                    pos: current.pos + ivec2(-1, 0),
+                    cheeted: 2,
+                    cost: current.cost + 1,
+                },
+                Pos {
+                    pos: current.pos + ivec2(0, 1),
+                    cheeted: 2,
+                    cost: current.cost + 1,
+                },
+                Pos {
+                    pos: current.pos + ivec2(0, -1),
+                    cheeted: 2,
+                    cost: current.cost + 1,
+                },
+            ]);
+
+            4
+        };
+
+        for neighbor in &possible_neighbors[..neighbor_count] {
+            println!("{:?}", neighbor);
+
+            if neighbor.cheeted != 1 && map.get(neighbor.pos) == b'#' {
                 continue;
             }
 
-            if neighbor.cost < limit {
+            if neighbor.cost < limit && neighbor.cost < g_score.get(*neighbor) {
+                g_score.set(*neighbor, neighbor.cost);
                 open_set.push(*neighbor);
             }
         }
     }
 
+    println!("End");
+
     Some(path_count)
 }
 
-pub fn a(input: &str) -> i32 {
+pub fn a(input: &str, limit: u32) -> i32 {
     let mut map = Map::new(input);
 
     let start = map.find_first(b'S').unwrap();
@@ -290,15 +427,19 @@ pub fn a(input: &str) -> i32 {
 
     let shortest_no_cheet_path = djikstra_no_cheet(&map, start, end).unwrap();
 
-    //djikstra_all_cheet(&map, start, end, shortest_no_cheet_path.saturating_sub(100)).unwrap()
-
-    shortest_no_cheet_path as _
+    djikstra_all_cheet(
+        &map,
+        start,
+        end,
+        shortest_no_cheet_path.saturating_sub(limit),
+    )
+    .unwrap()
 }
 
 #[test]
 fn test_a() {
-    assert_eq!(a(TEST_INPUT), 100);
-    //assert_eq!(a(INPUT), 0);
+    assert_eq!(a(TEST_INPUT, 2), 14);
+    //assert_eq!(a(INPUT, 100), 0);
 }
 
 pub fn b(input: &str) -> i32 {
