@@ -238,7 +238,7 @@ fn manhattan_iter(dist: i32) -> impl Iterator<Item = IVec2> {
         let max_y = dist - x.abs();
         (-max_y..=max_y)
             .map(move |y| IVec2::new(x, y))
-            .filter(|p| *p != ivec2(0, 0))
+            .filter(|p| (p.x.abs() + p.y.abs()) > 1)
     })
 }
 
