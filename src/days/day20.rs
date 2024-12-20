@@ -250,15 +250,7 @@ impl Ord for Cost {
     }
 }
 
-pub fn a(input: &str) -> i32 {
-    let mut map = Map::new(input);
-
-    let start = map.find_first(b'S').unwrap();
-    let end = map.find_first(b'E').unwrap();
-
-    map.set(start, b'.');
-    map.set(end, b'.');
-
+pub fn djikstra_no_cheet(map: &Map<u8>, start: IVec2, end: IVec2) -> Option<i32> {
     let start = Pos {
         pos: start,
         cheeted: false,
@@ -275,7 +267,7 @@ pub fn a(input: &str) -> i32 {
 
     while let Some(Cost { pos: current, .. }) = open_set.pop() {
         if current.pos == end {
-            return g_score.get(current) as i32;
+            return Some(g_score.get(current) as i32);
         }
 
         for neighbor in [
@@ -312,7 +304,21 @@ pub fn a(input: &str) -> i32 {
         }
     }
 
-    panic!("No path");
+    None
+}
+
+pub fn a(input: &str) -> i32 {
+    let mut map = Map::new(input);
+
+    let start = map.find_first(b'S').unwrap();
+    let end = map.find_first(b'E').unwrap();
+
+    map.set(start, b'.');
+    map.set(end, b'.');
+
+    let shortest_no_cheet_path = djikstra_no_cheet(&map, start, end).unwrap();
+
+    0
 }
 
 #[test]
