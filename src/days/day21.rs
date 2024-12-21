@@ -2,6 +2,7 @@ use std::{cmp, collections::BinaryHeap, str};
 
 use cached::proc_macro::cached;
 use glam::{ivec2, IVec2};
+use itertools::Itertools;
 use smallvec::SmallVec;
 
 pub static INPUT: &str = include_str!("../input/21.txt");
@@ -216,19 +217,8 @@ fn pos_from_digit(digit: u8) -> IVec2 {
     }
 }
 
-fn pos_from_dir(dir: IVec2) -> IVec2 {
-    match dir {
-        IVec2 { x: 1, y: 0 } => ivec2(2, 1),
-        IVec2 { x: -1, y: 0 } => ivec2(0, 1),
-        IVec2 { x: 0, y: 1 } => ivec2(1, 0),
-        IVec2 { x: 0, y: -1 } => ivec2(1, 1),
-
-        _ => panic!("Invalid"),
-    }
-}
-
 #[cached]
-fn path_keypad(start: IVec2, end: IVec2) -> Vec<Vec<IVec2>> {
+fn path_numpad(start: IVec2, end: IVec2) -> Vec<Vec<IVec2>> {
     let mut g_score = Map::<u32>::empty(3, 4, u32::MAX);
     g_score.set(start, 0);
 
@@ -279,24 +269,139 @@ fn path_keypad(start: IVec2, end: IVec2) -> Vec<Vec<IVec2>> {
     panic!("No path");
 }
 
-fn map_pair_to_dir(a: IVec2, b: IVec2) -> u8 {
+fn map_pair_to_dir(a: IVec2, b: IVec2) -> char {
     match b - a {
-        IVec2 { x: 1, y: 0 } => b'>',
-        IVec2 { x: -1, y: 0 } => b'<',
-        IVec2 { x: 0, y: 1 } => b'^',
-        IVec2 { x: 0, y: -1 } => b'v',
-        _ => panic!("Bad"),
+        IVec2 { x: 1, y: 0 } => '>',
+        IVec2 { x: -1, y: 0 } => '<',
+        IVec2 { x: 0, y: 1 } => 'v',
+        IVec2 { x: 0, y: -1 } => '^',
+        _ => panic!("Bad {}", b - a),
     }
 }
 
-fn find_shortest_sequence(code: &[u8]) -> i32 {
+fn find_all_numpad_sequences(code: &[u8]) -> Vec<String> {
+    let mut all_paths = Vec::new();
+
     let mut start = b'A';
     for &end in code {
-        println!("{} -> {}", start as char, end as char);
-        let paths = path_keypad(pos_from_digit(start), pos_from_digit(end));
-        println!("{paths:#?}");
+        let paths = path_numpad(pos_from_digit(start), pos_from_digit(end));
+        let paths = paths
+            .iter()
+            .map(|v| {
+                v.windows(2)
+                    .map(|a| map_pair_to_dir(a[0], a[1]))
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>();
+
+        all_paths.push(paths);
+        all_paths.push(vec!["A".to_string()]);
         start = end;
     }
+
+    all_paths
+        .into_iter()
+        .multi_cartesian_product()
+        .map(|inner| inner.join(""))
+        .collect::<Vec<_>>()
+}
+
+fn pos_from_dir(dir: char) -> IVec2 {
+    match dir {
+        '>' => ivec2(2, 1),
+        '<' => ivec2(0, 1),
+        '^' => ivec2(1, 0),
+        'v' => ivec2(1, 1),
+        'A' => ivec2(2, 0),
+        _ => panic!("Invalid"),
+    }
+}
+
+#[cached]
+fn path_keypad(start: IVec2, end: IVec2) -> Vec<Vec<IVec2>> {
+    let mut g_score = Map::<u32>::empty(3, 2, u32::MAX);
+    g_score.set(start, 0);
+
+    let mut open_set = BinaryHeap::new();
+    open_set.push(Cost {
+        pos: start,
+        cost: 0,
+    });
+
+    let mut came_from = CameFrom::empty(3, 2);
+
+    while let Some(Cost { pos: current, .. }) = open_set.pop() {
+        if current == end {
+            return all_paths(&mut came_from, current, start);
+        }
+
+        for neighbor_dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
+            let neighbor = current + neighbor_dir;
+
+            if !((0..3).contains(&neighbor.x)
+                && (0..2).contains(&neighbor.y)
+                && neighbor != ivec2(0, 0))
+            {
+                continue;
+            }
+
+            let tentative_g_score = g_score.get(current) + 1;
+            let neighbor_g_score = g_score.get(neighbor);
+            if tentative_g_score <= neighbor_g_score {
+                let came_from = came_from.get_mut(neighbor);
+                if tentative_g_score < neighbor_g_score {
+                    came_from.clear();
+                }
+                came_from.push(current);
+
+                if tentative_g_score < neighbor_g_score {
+                    g_score.set(neighbor, tentative_g_score);
+
+                    open_set.push(Cost {
+                        pos: neighbor,
+                        cost: tentative_g_score,
+                    });
+                }
+            }
+        }
+    }
+
+    panic!("No path");
+}
+
+fn find_all_keypad_sequences(sequence: &str) -> Vec<String> {
+    let mut all_paths = Vec::new();
+
+    let mut start = 'A';
+    for end in sequence.chars() {
+        let paths = path_keypad(pos_from_dir(start), pos_from_dir(end));
+        let paths = paths
+            .iter()
+            .map(|v| {
+                v.windows(2)
+                    .map(|a| map_pair_to_dir(a[0], a[1]))
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>();
+
+        all_paths.push(paths);
+        all_paths.push(vec!["A".to_string()]);
+        start = end;
+    }
+
+    all_paths
+        .into_iter()
+        .multi_cartesian_product()
+        .map(|inner| inner.join(""))
+        .collect::<Vec<_>>()
+}
+
+fn find_shortest_sequence(code: &[u8]) -> i32 {
+    let all_keypad_sequences = find_all_numpad_sequences(code);
+    println!("{all_keypad_sequences:#?}");
+
+    for keypad_sequence in all_keypad_sequences {}
+
     0
 }
 
