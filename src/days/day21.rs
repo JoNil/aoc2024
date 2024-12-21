@@ -193,29 +193,57 @@ impl Ord for Cost {
     }
 }
 
-fn count_path(came_from: &mut CameFrom, current: IVec2, start: IVec2) -> Vec<Vec<IVec2>> {
-    /*let paths = Vec::new();
+fn all_paths(came_from: &mut CameFrom, current: IVec2, start: IVec2) -> Vec<Vec<IVec2>> {
+    let mut paths = Vec::new();
+    paths.push(vec![current]);
 
-    let mut steps = 0;
+    loop {
+        let mut new_paths = Vec::new();
 
-    let mut open_set = vec![current];
+        let mut did_work = false;
 
-    while let Some(current) = open_set.pop() {
-        if map.get(current.pos) == b'.' {
-            steps += 1;
-        }
-        map.set(current.pos, b'O');
+        for path in &mut paths {
+            let current = path.last().unwrap();
 
-        if current != start {
-            let came_from = came_from.get_mut(current);
-            for new in came_from {
-                open_set.push(*new);
+            if *current == start {
+                continue;
             }
+
+            did_work = true;
+            let came_from = came_from.get_mut(*current);
+
+            #[allow(clippy::comparison_chain)]
+            if came_from.len() == 1 {
+                path.push(came_from[0]);
+            } else if came_from.len() > 1 {
+                let old = path.clone();
+
+                for (i, next) in came_from.iter().enumerate() {
+                    if i == 0 {
+                        path.push(*next);
+                    } else {
+                        let mut new_path = old.clone();
+                        new_path.push(*next);
+                        new_paths.push(new_path);
+                    }
+                }
+            }
+        }
+
+        for new_path in new_paths {
+            paths.push(new_path);
+        }
+
+        if !did_work {
+            break;
         }
     }
 
-    steps*/
-    todo!()
+    for path in &mut paths {
+        path.reverse();
+    }
+
+    paths
 }
 
 fn pos_from_digit(digit: u8) -> IVec2 {
@@ -264,7 +292,7 @@ fn path_keypad(start: IVec2, end: IVec2) -> Vec<Vec<IVec2>> {
 
     while let Some(Cost { pos: current, .. }) = open_set.pop() {
         if current == end {
-            return count_path(&mut came_from, current, start);
+            return all_paths(&mut came_from, current, start);
         }
 
         for neighbor_dir in [ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1)] {
@@ -305,7 +333,8 @@ fn find_shortest_sequence(code: &[u8]) -> i32 {
     let mut start = b'A';
     for &end in code {
         println!("{} -> {}", start as char, end as char);
-        path_keypad(pos_from_digit(start), pos_from_digit(end));
+        let paths = path_keypad(pos_from_digit(start), pos_from_digit(end));
+        println!("{paths:?}");
         start = end;
     }
     0
