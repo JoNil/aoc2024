@@ -368,7 +368,6 @@ fn path_keypad(start: IVec2, end: IVec2) -> Vec<Vec<IVec2>> {
     panic!("No path");
 }
 
-#[cached]
 fn find_all_keypad_sequences(sequence: String) -> Vec<String> {
     let mut all_paths = Vec::new();
 
