@@ -54,7 +54,6 @@ where
         }
     }
 
-    #[inline(always)]
     pub fn get(&self, pos: IVec2) -> T {
         let index = pos.x + pos.y * self.width;
 
@@ -69,7 +68,6 @@ where
         unsafe { *self.data.get_unchecked(index as usize) }
     }
 
-    #[inline(always)]
     pub fn set(&mut self, pos: IVec2, new: T) -> bool {
         let index = pos.x + pos.y * self.width;
 
@@ -91,21 +89,9 @@ where
 
 impl Map<u8> {
     pub fn new(input: &str) -> Map<u8> {
-        let mut data = Vec::with_capacity(input.len());
-        for byte in input.as_bytes() {
-            if *byte != b'\n' {
-                data.push(*byte);
-            }
-        }
+        let data = input.replace('\n', "").into_bytes();
 
-        let mut width = 0;
-
-        for (i, byte) in input.as_bytes().iter().enumerate() {
-            if *byte == b'\n' {
-                width = i as i32;
-                break;
-            }
-        }
+        let mut width: i32 = 0;
 
         if let Some(line) = input.lines().next() {
             width = line.len() as i32;
