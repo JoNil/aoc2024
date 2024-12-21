@@ -1,9 +1,8 @@
-use std::{cmp, collections::BinaryHeap, str};
-
 use cached::proc_macro::cached;
 use glam::{ivec2, IVec2};
 use itertools::Itertools;
 use smallvec::SmallVec;
+use std::{cmp, collections::BinaryHeap, str};
 
 pub static INPUT: &str = include_str!("../input/21.txt");
 pub static TEST_INPUT: &str = include_str!("../input/21_test.txt");
@@ -369,7 +368,8 @@ fn path_keypad(start: IVec2, end: IVec2) -> Vec<Vec<IVec2>> {
     panic!("No path");
 }
 
-fn find_all_keypad_sequences(sequence: &str) -> Vec<String> {
+#[cached]
+fn find_all_keypad_sequences(sequence: String) -> Vec<String> {
     let mut all_paths = Vec::new();
 
     let mut start = 'A';
@@ -397,16 +397,34 @@ fn find_all_keypad_sequences(sequence: &str) -> Vec<String> {
 }
 
 fn find_shortest_sequence(code: &[u8]) -> i32 {
-    let all_keypad_sequences = find_all_numpad_sequences(code);
-    println!("{all_keypad_sequences:#?}");
+    println!("{}", str::from_utf8(code).unwrap());
 
-    for keypad_sequence in all_keypad_sequences {}
+    let all_numpad_sequences = find_all_numpad_sequences(code);
 
-    0
+    let mut shortest = i32::MAX;
+
+    for numpad_sequence in all_numpad_sequences {
+        let keypad_sequences = find_all_keypad_sequences(numpad_sequence);
+
+        for sequence in keypad_sequences {
+            let keypad_sequences = find_all_keypad_sequences(sequence);
+
+            for sequence in keypad_sequences {
+                let len = sequence.len() as i32;
+                if len < shortest {
+                    println!("{sequence}");
+                    shortest = len;
+                }
+            }
+        }
+    }
+
+    shortest
 }
 
 pub fn a(input: &str) -> i32 {
     let codes = input
+        .trim()
         .lines()
         .map(|s| {
             (
@@ -428,9 +446,9 @@ pub fn a(input: &str) -> i32 {
 
 #[test]
 fn test_a() {
-    assert_eq!(a("029A"), 1);
+    assert_eq!(a("029A"), 1972);
     assert_eq!(a(TEST_INPUT), 126384);
-    assert_eq!(a(INPUT), 0);
+    assert_eq!(a(INPUT), 237342);
 }
 
 pub fn b(input: &str) -> i32 {
