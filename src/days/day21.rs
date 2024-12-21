@@ -395,32 +395,6 @@ fn find_all_keypad_sequences(sequence: String) -> Vec<String> {
         .collect::<Vec<_>>()
 }
 
-fn find_shortest_sequence(code: &[u8]) -> i32 {
-    println!("{}", str::from_utf8(code).unwrap());
-
-    let all_numpad_sequences = find_all_numpad_sequences(code);
-
-    let mut shortest = i32::MAX;
-
-    for numpad_sequence in all_numpad_sequences {
-        let keypad_sequences = find_all_keypad_sequences(numpad_sequence);
-
-        for sequence in keypad_sequences {
-            let keypad_sequences = find_all_keypad_sequences(sequence);
-
-            for sequence in keypad_sequences {
-                let len = sequence.len() as i32;
-                if len < shortest {
-                    println!("{sequence}");
-                    shortest = len;
-                }
-            }
-        }
-    }
-
-    shortest
-}
-
 pub fn a(input: &str) -> i32 {
     let codes = input
         .trim()
@@ -436,8 +410,21 @@ pub fn a(input: &str) -> i32 {
     let mut sum_of_complexity = 0;
 
     for (code, code_no) in codes {
-        let complexity = find_shortest_sequence(code);
-        sum_of_complexity += code_no * complexity;
+        println!("{}", str::from_utf8(code).unwrap());
+
+        let all_numpad_sequences = find_all_numpad_sequences(code);
+
+        let mut sequences = all_numpad_sequences;
+
+        for i in 0..2 {
+            println!("{i} {} {}", sequences.len(), sequences[0]);
+            sequences = sequences
+                .into_iter()
+                .flat_map(find_all_keypad_sequences)
+                .collect();
+        }
+
+        sum_of_complexity += code_no * sequences.iter().map(|s| s.len()).min().unwrap() as i32;
     }
 
     sum_of_complexity
@@ -445,17 +432,47 @@ pub fn a(input: &str) -> i32 {
 
 #[test]
 fn test_a() {
-    assert_eq!(a("029A"), 1972);
     assert_eq!(a(TEST_INPUT), 126384);
     assert_eq!(a(INPUT), 237342);
 }
 
 pub fn b(input: &str) -> i32 {
-    0
+    let codes = input
+        .trim()
+        .lines()
+        .map(|s| {
+            (
+                s.as_bytes(),
+                s.trim_end_matches('A').parse::<i32>().unwrap(),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let mut sum_of_complexity = 0;
+
+    for (code, code_no) in codes {
+        println!("{}", str::from_utf8(code).unwrap());
+
+        let all_numpad_sequences = find_all_numpad_sequences(code);
+
+        let mut sequences = all_numpad_sequences;
+
+        for i in 0..25 {
+            println!("{i} {} {}", sequences.len(), sequences[0]);
+            sequences = sequences
+                .into_iter()
+                .flat_map(find_all_keypad_sequences)
+                .collect();
+        }
+
+        sum_of_complexity += code_no * sequences.iter().map(|s| s.len()).min().unwrap() as i32;
+    }
+
+    sum_of_complexity
 }
 
 #[test]
 fn test_b() {
-    assert_eq!(b(TEST_INPUT), 0);
-    assert_eq!(b(INPUT), 0);
+    //assert_eq!(b(TEST_INPUT), 0);
+    //assert_eq!(b(INPUT), 0);
 }
