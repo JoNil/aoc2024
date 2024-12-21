@@ -287,15 +287,16 @@ pub fn b(input: &str, limit: u32) -> i32 {
 
     let mut possible_skips = 0;
 
-    let offsets = manhattan_iter(20).collect::<Vec<_>>();
+    let offsets = manhattan_iter(20)
+        .map(|dir| (dir, dir.x.abs() + dir.y.abs()))
+        .collect::<Vec<_>>();
 
     for (pos, pos_count) in path {
-        for skip_dir in &offsets {
+        for (skip_dir, skip_dist) in &offsets {
             let skip_pos = pos + skip_dir;
             let skip_count = path_map.get(skip_pos);
 
-            let skip_len =
-                skip_count as i32 - pos_count as i32 - skip_dir.x.abs() - skip_dir.y.abs();
+            let skip_len = skip_count as i32 - pos_count as i32 - skip_dist;
 
             if skip_count > 0 && skip_len >= limit as i32 {
                 possible_skips += 1;
