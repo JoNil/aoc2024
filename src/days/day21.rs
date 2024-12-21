@@ -422,6 +422,10 @@ pub fn a(input: &str) -> i32 {
                 .into_iter()
                 .flat_map(find_all_keypad_sequences)
                 .collect();
+
+            let min_len = sequences.iter().map(|s| s.len()).min().unwrap();
+
+            sequences.retain(|s| s.len() == min_len);
         }
 
         sum_of_complexity += code_no * sequences.iter().map(|s| s.len()).min().unwrap() as i32;
@@ -432,6 +436,7 @@ pub fn a(input: &str) -> i32 {
 
 #[test]
 fn test_a() {
+    assert_eq!(a("029A"), 1972);
     assert_eq!(a(TEST_INPUT), 126384);
     assert_eq!(a(INPUT), 237342);
 }

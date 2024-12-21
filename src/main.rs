@@ -82,8 +82,8 @@ fn main() {
     time(|input| day20::a(input, 100), day20::INPUT);
     time(|input| day20::b(input, 100), day20::INPUT);
 
-    time(day21::a, day21::INPUT);
-    //time(day21::b, day21::INPUT);
+    //time(day21::a, day21::INPUT);
+    time(day21::b, day21::INPUT);
 
     let elapsed = start.elapsed();
 
