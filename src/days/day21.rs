@@ -1,4 +1,7 @@
+use std::collections::HashMap;
+
 use glam::{ivec2, IVec2};
+use pathfinding::prelude::dijkstra_all;
 
 pub static INPUT: &str = include_str!("../input/21.txt");
 pub static TEST_INPUT: &str = include_str!("../input/21_test.txt");
@@ -34,7 +37,28 @@ fn pos_from_dir(dir: IVec2) -> IVec2 {
     }
 }
 
+fn path_keypad(start: IVec2, end: IVec2) {
+    let paths: HashMap<IVec2, (IVec2, i32)> = dijkstra_all(&start, |pos| {
+        [
+            (pos + ivec2(1, 0), 1),
+            (pos + ivec2(-1, 0), 1),
+            (pos + ivec2(0, 1), 1),
+            (pos + ivec2(0, -1), 1),
+        ]
+        .into_iter()
+        .filter(|d| (0..3).contains(&d.0.x) && (0..2).contains(&d.0.y))
+    });
+
+    println!("{:#?}", paths);
+}
+
 fn find_shortest_sequence(code: &[u8]) -> i32 {
+    let mut start = b'A';
+    for &end in code {
+        println!("{} -> {}", start as char, end as char);
+        path_keypad(pos_from_digit(start), pos_from_digit(end));
+        start = end;
+    }
     0
 }
 
@@ -61,6 +85,7 @@ pub fn a(input: &str) -> i32 {
 
 #[test]
 fn test_a() {
+    assert_eq!(a("029A"), 1);
     assert_eq!(a(TEST_INPUT), 126384);
     assert_eq!(a(INPUT), 0);
 }

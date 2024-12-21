@@ -11,6 +11,8 @@ crossterm = "0.28"
 glam = "0.29"
 rustc-hash = "2"
 smallvec = "1.13"
+cached = "0.54"
+pathfinding = "4"
 
 [dev-dependencies]
 criterion = "0.5"
