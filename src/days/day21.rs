@@ -1,9 +1,4 @@
-use std::{
-    cmp,
-    collections::{BinaryHeap, HashMap},
-    fmt::Display,
-    str,
-};
+use std::{cmp, collections::BinaryHeap, str};
 
 use cached::proc_macro::cached;
 use glam::{ivec2, IVec2};
@@ -90,51 +85,6 @@ where
         self.data[index as usize] = new;
 
         true
-    }
-}
-
-impl Map<u8> {
-    pub fn new(input: &str) -> Map<u8> {
-        let data = input.replace('\n', "").into_bytes();
-
-        let mut width: i32 = 0;
-
-        if let Some(line) = input.lines().next() {
-            width = line.len() as i32;
-        }
-
-        let height = data.len() as i32 / width;
-
-        Map {
-            data,
-            width,
-            height,
-        }
-    }
-
-    pub fn find_first(&self, needle: u8) -> Option<IVec2> {
-        for y in 0..self.height {
-            for x in 0..self.width {
-                let pos = ivec2(x, y);
-                let v = self.get(pos);
-
-                if v == needle {
-                    return Some(pos);
-                }
-            }
-        }
-
-        None
-    }
-}
-
-impl Display for Map<u8> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for line in self.data.chunks(self.width as usize) {
-            writeln!(f, "{}", str::from_utf8(line).unwrap())?;
-        }
-
-        Ok(())
     }
 }
 
@@ -329,12 +279,22 @@ fn path_keypad(start: IVec2, end: IVec2) -> Vec<Vec<IVec2>> {
     panic!("No path");
 }
 
+fn map_pair_to_dir(a: IVec2, b: IVec2) -> u8 {
+    match b - a {
+        IVec2 { x: 1, y: 0 } => b'>',
+        IVec2 { x: -1, y: 0 } => b'<',
+        IVec2 { x: 0, y: 1 } => b'^',
+        IVec2 { x: 0, y: -1 } => b'v',
+        _ => panic!("Bad"),
+    }
+}
+
 fn find_shortest_sequence(code: &[u8]) -> i32 {
     let mut start = b'A';
     for &end in code {
         println!("{} -> {}", start as char, end as char);
         let paths = path_keypad(pos_from_digit(start), pos_from_digit(end));
-        println!("{paths:?}");
+        println!("{paths:#?}");
         start = end;
     }
     0
