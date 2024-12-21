@@ -1,4 +1,4 @@
-use glam::ivec2;
+use glam::{ivec2, IVec2};
 
 pub static INPUT: &str = include_str!("../input/21.txt");
 pub static TEST_INPUT: &str = include_str!("../input/21_test.txt");
@@ -19,6 +19,17 @@ fn pos_from_digit(digit: u8) -> IVec2 {
 
         b'0' => ivec2(1, 3),
         b'A' => ivec2(2, 3),
+        _ => panic!("Invalid"),
+    }
+}
+
+fn pos_from_dir(dir: IVec2) -> IVec2 {
+    match dir {
+        IVec2 { x: 1, y: 0 } => ivec2(2, 1),
+        IVec2 { x: -1, y: 0 } => ivec2(0, 1),
+        IVec2 { x: 0, y: 1 } => ivec2(1, 0),
+        IVec2 { x: 0, y: -1 } => ivec2(1, 1),
+
         _ => panic!("Invalid"),
     }
 }
