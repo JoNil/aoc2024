@@ -1,5 +1,5 @@
 use crate::{AdventHashMap, AdventHashSet};
-use glam::{ivec2, IVec2};
+use glam::IVec2;
 use std::{fmt::Display, str};
 
 pub static INPUT: &str = include_str!("../input/23.txt");
@@ -94,7 +94,11 @@ impl Display for Matrix {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for line in self.data.chunks(self.width as usize) {
             for c in line {
-                write!(f, "{}", (*c + 48) as u8 as char)?;
+                if *c == 1 {
+                    write!(f, "1")?;
+                } else {
+                    write!(f, " ")?;
+                }
             }
 
             writeln!(f)?;
@@ -104,7 +108,42 @@ impl Display for Matrix {
     }
 }
 
-pub fn b(input: &str) -> i32 {
+fn bron_kerbosch<'a, F>(
+    r: AdventHashSet<&'a str>,
+    mut p: AdventHashSet<&'a str>,
+    mut x: AdventHashSet<&'a str>,
+    max_clique: &mut AdventHashSet<&'a str>,
+    n_fn: &F,
+) where
+    F: Fn(&str) -> &'a AdventHashSet<&'a str>,
+{
+    if p.is_empty() && x.is_empty() {
+        if r.len() > max_clique.len() {
+            *max_clique = r;
+        }
+        return;
+    }
+
+    for v in p.clone() {
+        let n_v = n_fn(&v);
+        bron_kerbosch(
+            {
+                let mut r_next = r.clone();
+                r_next.insert(v);
+                r_next
+            },
+            p.intersection(n_v).copied().collect(),
+            x.intersection(n_v).copied().collect(),
+            max_clique,
+            n_fn,
+        );
+
+        p.remove(&v);
+        x.insert(v);
+    }
+}
+
+pub fn b(input: &str) -> String {
     let mut connections = AdventHashMap::<&str, AdventHashSet<&str>>::default();
 
     for (a, b) in input.lines().map(|l| l.split_once('-').unwrap()) {
@@ -112,46 +151,24 @@ pub fn b(input: &str) -> i32 {
         connections.entry(b).or_default().insert(a);
     }
 
-    let mut computers = connections.keys().copied().collect::<Vec<_>>();
-    computers.sort();
+    let mut max_clique = AdventHashSet::default();
 
-    let reverse = computers
-        .iter()
-        .copied()
-        .enumerate()
-        .map(|(i, c)| (c, i))
-        .collect::<AdventHashMap<_, _>>();
+    bron_kerbosch(
+        AdventHashSet::default(),
+        connections.keys().copied().collect(),
+        AdventHashSet::default(),
+        &mut max_clique,
+        &|n| connections.get(n).unwrap(),
+    );
 
-    let mut matrix = Matrix::empty(computers.len(), computers.len());
+    let mut max_clique = max_clique.iter().copied().collect::<Vec<_>>();
+    max_clique.sort();
 
-    for (i, computer) in computers.iter().copied().enumerate() {
-        for connection in connections.get(computer).unwrap().iter().copied() {
-            let j = *reverse.get(connection).unwrap();
-
-            matrix.set(ivec2(i as _, j as _), 1);
-            matrix.set(ivec2(j as _, i as _), 1);
-        }
-    }
-
-    for computers in computers.iter().copied() {
-        print!("{}", computers.as_bytes()[0] as char)
-    }
-
-    println!();
-
-    for computers in computers.iter().copied() {
-        print!("{}", computers.as_bytes()[1] as char)
-    }
-
-    println!();
-
-    println!("{}", matrix);
-
-    0
+    max_clique.join(",")
 }
 
 #[test]
 fn test_b() {
-    assert_eq!(b(TEST_INPUT), 1);
-    assert_eq!(b(INPUT), 0);
+    assert_eq!(b(TEST_INPUT), "co,de,ka,ta");
+    assert_eq!(b(INPUT), "aj,ds,gg,id,im,jx,kq,nj,ql,qr,ua,yh,zn");
 }
