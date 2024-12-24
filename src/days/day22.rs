@@ -33,15 +33,41 @@ pub fn a(input: &str) -> i64 {
 #[test]
 fn test_a() {
     assert_eq!(a(TEST_INPUT), 37327623);
-    assert_eq!(a(INPUT), 0);
+    assert_eq!(a(INPUT), 14726157693);
 }
 
-pub fn b(input: &str) -> i32 {
-    0
+pub fn b(input: &str) -> i64 {
+    let mut sum_of_secret_numbers = 0;
+
+    for mut value in input.lines().map(|l|l.parse::<i64>().unwrap()) {
+
+        let mut last_price = value % 10;
+
+        println!("{value}: {last_price}");
+
+        for _ in 0..10 {
+            value = prune(mix(value, value * 64));
+            value = prune(mix(value, value / 32));
+            value = prune(mix(value, value * 2048));
+
+            let price = value % 10;
+            let diff = price - last_price;
+            last_price = price;
+
+            println!("{value}: {price} ({diff})");
+        }
+
+        
+        sum_of_secret_numbers += value;
+
+    }
+
+    sum_of_secret_numbers
 }
 
 #[test]
 fn test_b() {
-    assert_eq!(b(TEST_INPUT), 0);
-    assert_eq!(b(INPUT), 0);
+    assert_eq!(b("123"), 1);
+    //assert_eq!(b(TEST_INPUT), 23);
+    //assert_eq!(b(INPUT), 0);
 }
