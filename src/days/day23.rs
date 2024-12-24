@@ -1,6 +1,4 @@
 use crate::{AdventHashMap, AdventHashSet};
-use glam::IVec2;
-use std::{fmt::Display, str};
 
 pub static INPUT: &str = include_str!("../input/23.txt");
 pub static TEST_INPUT: &str = include_str!("../input/23_test.txt");
@@ -25,7 +23,6 @@ pub fn a(input: &str) -> i32 {
 
                     if !unique_paths.contains(&id) {
                         unique_paths.insert(id);
-                        println!("{start} {second} {third}");
                     }
                 }
             }
@@ -39,73 +36,6 @@ pub fn a(input: &str) -> i32 {
 fn test_a() {
     assert_eq!(a(TEST_INPUT), 7);
     assert_eq!(a(INPUT), 1154);
-}
-
-#[derive(Clone)]
-pub struct Matrix {
-    data: Vec<i32>,
-    width: i32,
-    height: i32,
-}
-
-impl Matrix {
-    pub fn empty(width: usize, height: usize) -> Matrix {
-        Matrix {
-            data: vec![0; width * height],
-            width: width as i32,
-            height: height as i32,
-        }
-    }
-
-    pub fn get(&self, pos: IVec2) -> i32 {
-        let index = pos.x + pos.y * self.width;
-
-        if pos.x < 0 || pos.x >= self.width {
-            return 0;
-        }
-
-        if pos.y < 0 || pos.y >= self.height {
-            return 0;
-        }
-
-        unsafe { *self.data.get_unchecked(index as usize) }
-    }
-
-    pub fn set(&mut self, pos: IVec2, new: i32) -> bool {
-        let index = pos.x + pos.y * self.width;
-
-        if pos.x < 0 || pos.x >= self.width {
-            return false;
-        }
-
-        if pos.y < 0 || pos.y >= self.height {
-            return false;
-        }
-
-        unsafe {
-            *self.data.get_unchecked_mut(index as usize) = new;
-        }
-
-        true
-    }
-}
-
-impl Display for Matrix {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for line in self.data.chunks(self.width as usize) {
-            for c in line {
-                if *c == 1 {
-                    write!(f, "1")?;
-                } else {
-                    write!(f, " ")?;
-                }
-            }
-
-            writeln!(f)?;
-        }
-
-        Ok(())
-    }
 }
 
 fn bron_kerbosch<'a, F>(
