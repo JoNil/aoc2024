@@ -1,7 +1,10 @@
+use crate::{AdventHashMap, AdventHashSet};
+
 pub static INPUT: &str = include_str!("../input/22.txt");
 pub static TEST_INPUT: &str = include_str!("../input/22_test.txt");
+pub static TEST_INPUT_2: &str = include_str!("../input/22_test_2.txt");
 
-fn mix(a: i64, b:i64) -> i64 {
+fn mix(a: i64, b: i64) -> i64 {
     a ^ b
 }
 
@@ -10,24 +13,19 @@ fn prune(a: i64) -> i64 {
 }
 
 pub fn a(input: &str) -> i64 {
-    
     let mut sum_of_secret_numbers = 0;
 
-    for mut value in input.lines().map(|l|l.parse::<i64>().unwrap()) {
-
+    for mut value in input.lines().map(|l| l.parse::<i64>().unwrap()) {
         for _ in 0..2000 {
             value = prune(mix(value, value * 64));
             value = prune(mix(value, value / 32));
             value = prune(mix(value, value * 2048));
         }
 
-        
         sum_of_secret_numbers += value;
-
     }
 
     sum_of_secret_numbers
-
 }
 
 #[test]
@@ -36,16 +34,16 @@ fn test_a() {
     assert_eq!(a(INPUT), 14726157693);
 }
 
-pub fn b(input: &str) -> i64 {
-    let mut sum_of_secret_numbers = 0;
+pub fn b(input: &str) -> i32 {
+    let mut price_tables = Vec::new();
 
-    for mut value in input.lines().map(|l|l.parse::<i64>().unwrap()) {
+    for mut value in input.lines().map(|l| l.parse::<i64>().unwrap()) {
+        let mut price_table = AdventHashMap::default();
 
         let mut last_price = value % 10;
+        let mut diffs = [0i8; 4];
 
-        println!("{value}: {last_price}");
-
-        for _ in 0..10 {
+        for i in 0..2000 {
             value = prune(mix(value, value * 64));
             value = prune(mix(value, value / 32));
             value = prune(mix(value, value * 2048));
@@ -53,21 +51,36 @@ pub fn b(input: &str) -> i64 {
             let price = value % 10;
             let diff = price - last_price;
             last_price = price;
+            diffs.rotate_left(1);
+            diffs[3] = diff as i8;
 
-            println!("{value}: {price} ({diff})");
+            if i > 2 {
+                price_table.entry(diffs).or_insert(price as i8);
+            }
         }
 
-        
-        sum_of_secret_numbers += value;
-
+        price_tables.push(price_table);
     }
 
-    sum_of_secret_numbers
+    let possible_sequences = price_tables
+        .iter()
+        .flat_map(|t| t.keys())
+        .collect::<AdventHashSet<_>>();
+
+    possible_sequences
+        .into_iter()
+        .map(|s| {
+            price_tables
+                .iter()
+                .map(|pt| *pt.get(s).unwrap_or(&0) as i32)
+                .sum::<i32>()
+        })
+        .max()
+        .unwrap_or(0)
 }
 
 #[test]
 fn test_b() {
-    assert_eq!(b("123"), 1);
-    //assert_eq!(b(TEST_INPUT), 23);
-    //assert_eq!(b(INPUT), 0);
+    assert_eq!(b(TEST_INPUT_2), 23);
+    assert_eq!(b(INPUT), 1614);
 }
