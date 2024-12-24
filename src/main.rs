@@ -85,6 +85,9 @@ fn main() {
     //time(day21::a, day21::INPUT);
     //time(day21::b, day21::INPUT);
 
+    time(day22::a, day22::INPUT);
+    time(day22::b, day22::INPUT);
+
     let elapsed = start.elapsed();
 
     println!("Total Time {} us", elapsed.as_micros());
