@@ -11,27 +11,32 @@ pub fn a(input: &str) -> i32 {
         computers.entry(b).or_default().insert(a);
     }
 
-    let mut path_count = 0;
+    let mut unique_paths = AdventHashSet::default();
 
     for (start, next) in computers.iter().filter(|c| c.0.starts_with('t')) {
         for second in next {
             let second_next = computers.get(second).unwrap();
             for third in second_next {
                 if next.contains(third) {
-                    path_count += 1;
-                    println!("{start} {second} {third}");
+                    let mut id = [*start, *second, *third];
+                    id.sort();
+
+                    if !unique_paths.contains(&id) {
+                        unique_paths.insert(id);
+                        println!("{start} {second} {third}");
+                    }
                 }
             }
         }
     }
 
-    path_count
+    unique_paths.len() as _
 }
 
 #[test]
 fn test_a() {
     assert_eq!(a(TEST_INPUT), 7);
-    assert_eq!(a(INPUT), 0);
+    assert_eq!(a(INPUT), 1154);
 }
 
 pub fn b(input: &str) -> i32 {
