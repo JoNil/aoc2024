@@ -1,8 +1,33 @@
 pub static INPUT: &str = include_str!("../input/22.txt");
 pub static TEST_INPUT: &str = include_str!("../input/22_test.txt");
 
-pub fn a(input: &str) -> i32 {
-    0
+fn mix(a: i64, b:i64) -> i64 {
+    a ^ b
+}
+
+fn prune(a: i64) -> i64 {
+    a % 16777216
+}
+
+pub fn a(input: &str) -> i64 {
+    
+    let mut sum_of_secret_numbers = 0;
+
+    for mut value in input.lines().map(|l|l.parse::<i64>().unwrap()) {
+
+        for _ in 0..2000 {
+            value = prune(mix(value, value * 64));
+            value = prune(mix(value, value / 32));
+            value = prune(mix(value, value * 2048));
+        }
+
+        
+        sum_of_secret_numbers += value;
+
+    }
+
+    sum_of_secret_numbers
+
 }
 
 #[test]
