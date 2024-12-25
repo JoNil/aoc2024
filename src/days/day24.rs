@@ -221,20 +221,20 @@ pub fn b(input: &str) -> i32 {
         }
     }
 
-    let mut candidates = AdventHashSet::<&str>::default();
+    let mut candidates = wrong_bits[0].clone();
 
     for s in &wrong_bits {
-        let mut union = s.clone();
-        for s2 in &right_bits {
-            union = union.difference(s2).copied().collect::<AdventHashSet<_>>();
-        }
-        candidates.extend(union.iter());
+        candidates = candidates
+            .intersection(s)
+            .copied()
+            .collect::<AdventHashSet<_>>();
     }
 
     for combination in candidates.iter().combinations(2).combinations(4) {
         //println!("{combination:?}");
         if test_combination(&combination, &wires, &gates, z) {
             println!("Found {combination:?}");
+            break;
         }
     }
 
