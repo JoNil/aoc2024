@@ -1,4 +1,4 @@
-use crate::AdventHashMap;
+use crate::{AdventHashMap, AdventHashSet};
 
 pub static INPUT: &str = include_str!("../input/24.txt");
 pub static TEST_INPUT: &str = include_str!("../input/24_test.txt");
@@ -101,28 +101,20 @@ fn test_a() {
     assert_eq!(a(INPUT), 36902370467952);
 }
 
-fn resolve_gate_b(
-    gates: &AdventHashMap<&str, Gate>,
-    wires: &AdventHashMap<&str, u8>,
-    gate: &Gate,
-) -> Option<u8> {
-    let in1 = wires.get(gate.in1).copied().or_else(|| {
-        gates
-            .get(gate.in1)
-            .and_then(|g| resolve_gate(gates, wires, g))
-    })?;
+fn fetch_gates<'a>(
+    gates: &AdventHashMap<&str, Gate<'a>>,
+    gate: &Gate<'a>,
+    res: &mut AdventHashSet<&'a str>,
+) {
+    res.insert(gate.out);
 
-    let in2 = wires.get(gate.in2).copied().or_else(|| {
-        gates
-            .get(gate.in2)
-            .and_then(|g| resolve_gate(gates, wires, g))
-    })?;
+    if let Some(gate) = gates.get(gate.in1) {
+        fetch_gates(gates, gate, res)
+    }
 
-    Some(match gate.op {
-        GateOp::And => in1 & in2,
-        GateOp::Or => in1 | in2,
-        GateOp::Xor => in1 ^ in2,
-    })
+    if let Some(gate) = gates.get(gate.in2) {
+        fetch_gates(gates, gate, res)
+    }
 }
 
 fn get_value(name: &str, wires: &AdventHashMap<&str, u8>) -> u64 {
@@ -164,6 +156,25 @@ pub fn b(input: &str) -> i32 {
     let z = x + y;
 
     println!("{x} + {y} = {z}");
+
+    for i in 0.. {
+        let name = format!("z{i:02}");
+
+        let Some(gate) = gates.get(name.as_str()) else {
+            break;
+        };
+
+        let bit = resolve_gate(&gates, &wires, gate).unwrap();
+
+        let should_be = (z & (1 << i)) >> i;
+
+        if bit != should_be as u8 {
+            let mut possible_gates = AdventHashSet::default();
+            fetch_gates(&gates, gate, &mut possible_gates);
+            println!("Bit {i} is wrong");
+            println!("Involved gates: {possible_gates:?}");
+        }
+    }
 
     1
 }
