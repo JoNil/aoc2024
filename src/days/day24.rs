@@ -77,7 +77,7 @@ pub fn a(input: &str) -> u64 {
         })
         .collect::<AdventHashMap<_, _>>();
 
-    let mut out_bits = Vec::new();
+    let mut num = 0;
 
     for i in 0.. {
         let name = format!("z{i:02}");
@@ -86,14 +86,9 @@ pub fn a(input: &str) -> u64 {
             break;
         };
 
-        out_bits.push(resolve_gate(&gates, &wires, gate).unwrap());
-    }
+        let bit = resolve_gate(&gates, &wires, gate).unwrap();
 
-    let mut num = 0;
-
-    for bit in out_bits.iter().rev() {
-        num <<= 1;
-        num |= *bit as u64;
+        num |= (bit as u64) << i;
     }
 
     num
@@ -106,12 +101,74 @@ fn test_a() {
     assert_eq!(a(INPUT), 36902370467952);
 }
 
+fn resolve_gate_b(
+    gates: &AdventHashMap<&str, Gate>,
+    wires: &AdventHashMap<&str, u8>,
+    gate: &Gate,
+) -> Option<u8> {
+    let in1 = wires.get(gate.in1).copied().or_else(|| {
+        gates
+            .get(gate.in1)
+            .and_then(|g| resolve_gate(gates, wires, g))
+    })?;
+
+    let in2 = wires.get(gate.in2).copied().or_else(|| {
+        gates
+            .get(gate.in2)
+            .and_then(|g| resolve_gate(gates, wires, g))
+    })?;
+
+    Some(match gate.op {
+        GateOp::And => in1 & in2,
+        GateOp::Or => in1 | in2,
+        GateOp::Xor => in1 ^ in2,
+    })
+}
+
+fn get_value(name: &str, wires: &AdventHashMap<&str, u8>) -> u64 {
+    let mut num = 0;
+
+    for i in 0.. {
+        let name = format!("{name}{i:02}");
+
+        let Some(bit) = wires.get(name.as_str()) else {
+            break;
+        };
+
+        num |= (*bit as u64) << i;
+    }
+
+    num
+}
+
 pub fn b(input: &str) -> i32 {
-    0
+    let (wires, gates) = input.split_once("\n\n").unwrap();
+
+    let wires = wires
+        .lines()
+        .map(|l| l.split_once(": ").unwrap())
+        .map(|(name, signal)| (name, signal.parse::<u8>().unwrap()))
+        .collect::<AdventHashMap<_, _>>();
+
+    let gates = gates
+        .lines()
+        .map(|l| {
+            let g = Gate::from_str(l).unwrap();
+            (g.out, g)
+        })
+        .collect::<AdventHashMap<_, _>>();
+
+    let x = get_value("x", &wires);
+    let y = get_value("y", &wires);
+
+    let z = x + y;
+
+    println!("{x} + {y} = {z}");
+
+    1
 }
 
 #[test]
 fn test_b() {
-    assert_eq!(b(TEST_INPUT_2), 0);
     assert_eq!(b(INPUT), 0);
 }
