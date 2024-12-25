@@ -1,15 +1,20 @@
+use std::mem;
+
 use crate::{AdventHashMap, AdventHashSet};
+use itertools::Itertools;
 
 pub static INPUT: &str = include_str!("../input/24.txt");
 pub static TEST_INPUT: &str = include_str!("../input/24_test.txt");
 pub static TEST_INPUT_2: &str = include_str!("../input/24_test_2.txt");
 
+#[derive(Clone, Copy)]
 enum GateOp {
     And,
     Or,
     Xor,
 }
 
+#[derive(Clone, Copy)]
 struct Gate<'a> {
     op: GateOp,
     in1: &'a str,
@@ -133,6 +138,41 @@ fn get_value(name: &str, wires: &AdventHashMap<&str, u8>) -> u64 {
     num
 }
 
+fn test_combination(
+    combinations: &[Vec<&&str>],
+    wires: &AdventHashMap<&str, u8>,
+    gates: &AdventHashMap<&str, Gate>,
+    z: u64,
+) -> bool {
+    let mut gates = gates.clone();
+
+    for combination in combinations {
+        let a = combination[0];
+        let b = combination[1];
+
+        let [a, b] = gates.get_many_mut([*a, *b]);
+        mem::swap(a.unwrap(), b.unwrap());
+    }
+
+    for i in 0.. {
+        let name = format!("z{i:02}");
+
+        let Some(gate) = gates.get(name.as_str()) else {
+            break;
+        };
+
+        let bit = resolve_gate(&gates, &wires, gate).unwrap();
+
+        let should_be = (z >> i) & 1;
+
+        if bit != should_be as u8 {
+            return false;
+        }
+    }
+
+    true
+}
+
 pub fn b(input: &str) -> i32 {
     let (wires, gates) = input.split_once("\n\n").unwrap();
 
@@ -157,6 +197,9 @@ pub fn b(input: &str) -> i32 {
 
     println!("{x} + {y} = {z}");
 
+    let mut right_bits = Vec::new();
+    let mut wrong_bits = Vec::new();
+
     for i in 0.. {
         let name = format!("z{i:02}");
 
@@ -166,15 +209,36 @@ pub fn b(input: &str) -> i32 {
 
         let bit = resolve_gate(&gates, &wires, gate).unwrap();
 
-        let should_be = (z & (1 << i)) >> i;
+        let should_be = (z >> i) & 1;
+
+        let mut possible_gates = AdventHashSet::default();
+        fetch_gates(&gates, gate, &mut possible_gates);
 
         if bit != should_be as u8 {
-            let mut possible_gates = AdventHashSet::default();
-            fetch_gates(&gates, gate, &mut possible_gates);
-            println!("Bit {i} is wrong");
-            println!("Involved gates: {possible_gates:?}");
+            wrong_bits.push(possible_gates);
+        } else {
+            right_bits.push(possible_gates);
         }
     }
+
+    let mut candidates = AdventHashSet::<&str>::default();
+
+    for s in &wrong_bits {
+        let mut union = s.clone();
+        for s2 in &right_bits {
+            union = union.difference(s2).copied().collect::<AdventHashSet<_>>();
+        }
+        candidates.extend(union.iter());
+    }
+
+    for combination in candidates.iter().combinations(2).combinations(4) {
+        //println!("{combination:?}");
+        if test_combination(&combination, &wires, &gates, z) {
+            println!("Found {combination:?}");
+        }
+    }
+
+    //println!("{union:?}: {combinations}");
 
     1
 }
