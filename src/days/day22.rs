@@ -44,9 +44,9 @@ pub fn b(input: &str) -> i32 {
         let mut diffs = [0i8; 4];
 
         for i in 0..2000 {
-            value = prune(mix(value, value * 64));
-            value = prune(mix(value, value / 32));
-            value = prune(mix(value, value * 2048));
+            value = prune(mix(value, value << 6));
+            value = prune(mix(value, value >> 5));
+            value = prune(mix(value, value << 11));
 
             let price = value % 10;
             let diff = price - last_price;
