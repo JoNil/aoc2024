@@ -275,12 +275,22 @@ pub fn b(input: &str) -> i32 {
     }
 
     for (out, wrong) in wrong_bits {
-        let possible = Vec::new();
+        println!("{wrong:?}");
 
-        for (_, gate) in gates {
+        let possible = AdventHashSet::default();
 
-            //if wrong.contains(value)
+        for &wrong in &wrong {
+            for gate in gates.values() {
+                if gate.out != wrong {
+                    if !has_loop((wrong, gate.out), &wires, &gates) {
+                        possible.push((wrong, gate.out));
+                    }
+                }
+            }
         }
+
+        println!("{possible:?}");
+        break;
     }
 
     //println!("{candidates:?}");
