@@ -138,6 +138,55 @@ fn get_value(name: &str, wires: &AdventHashMap<&str, u8>) -> u64 {
     num
 }
 
+fn find_loop(
+    gates: &AdventHashMap<&str, Gate>,
+    wires: &AdventHashMap<&str, u8>,
+    gate: &Gate,
+    original_gate: &str,
+) -> bool {
+    if gate.in1 == original_gate || gate.in2 == original_gate {
+        return true;
+    }
+
+    let left = if wires.get(gate.in1).is_some() {
+        false
+    } else {
+        gates
+            .get(gate.in1)
+            .map(|g| find_loop(gates, wires, g, original_gate))
+            .unwrap()
+    };
+
+    let right = if wires.get(gate.in2).is_some() {
+        false
+    } else {
+        gates
+            .get(gate.in2)
+            .map(|g| find_loop(gates, wires, g, original_gate))
+            .unwrap()
+    };
+
+    left || right
+}
+
+fn has_loop(
+    (a_str, b_str): (&str, &str),
+    wires: &AdventHashMap<&str, u8>,
+    gates: &AdventHashMap<&str, Gate>,
+) -> bool {
+    let mut gates = gates.clone();
+
+    {
+        let [a, b] = gates.get_many_mut([a_str, b_str]);
+        mem::swap(a.unwrap(), b.unwrap());
+    }
+
+    let a = gates.get(&a_str).unwrap();
+    let b = gates.get(&b_str).unwrap();
+
+    return find_loop(&gates, wires, a, a_str) || find_loop(&gates, wires, b, b_str);
+}
+
 fn test_combination(
     combinations: &[Vec<&&str>],
     wires: &AdventHashMap<&str, u8>,
@@ -149,6 +198,10 @@ fn test_combination(
     for combination in combinations {
         let a = combination[0];
         let b = combination[1];
+
+        if has_loop((a, b), wires, &gates) {
+            return false;
+        }
 
         let [a, b] = gates.get_many_mut([*a, *b]);
         mem::swap(a.unwrap(), b.unwrap());
@@ -215,28 +268,30 @@ pub fn b(input: &str) -> i32 {
         fetch_gates(&gates, gate, &mut possible_gates);
 
         if bit != should_be as u8 {
-            wrong_bits.push(possible_gates);
+            wrong_bits.push((name, possible_gates));
         } else {
-            right_bits.push(possible_gates);
+            right_bits.push((name, possible_gates));
         }
     }
 
-    let mut candidates = wrong_bits[0].clone();
+    for (out, wrong) in wrong_bits {
+        let possible = Vec::new();
 
-    for s in &wrong_bits {
-        candidates = candidates
-            .intersection(s)
-            .copied()
-            .collect::<AdventHashSet<_>>();
-    }
+        for (_, gate) in gates {
 
-    for combination in candidates.iter().combinations(2).combinations(4) {
-        //println!("{combination:?}");
-        if test_combination(&combination, &wires, &gates, z) {
-            println!("Found {combination:?}");
-            break;
+            //if wrong.contains(value)
         }
     }
+
+    //println!("{candidates:?}");
+
+    //for combination in candidates.iter().combinations(2).combinations(4) {
+    //println!("{combination:?}");
+    //if test_combination(&combination, &wires, &gates, z) {
+    //    println!("Found {combination:?}");
+    //    break;
+    //}
+    //}
 
     //println!("{union:?}: {combinations}");
 
