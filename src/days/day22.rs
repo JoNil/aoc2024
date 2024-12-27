@@ -9,7 +9,7 @@ fn mix(a: i64, b: i64) -> i64 {
 }
 
 fn prune(a: i64) -> i64 {
-    a % 16777216
+    a & (16777216 - 1)
 }
 
 pub fn a(input: &str) -> i64 {
@@ -17,9 +17,9 @@ pub fn a(input: &str) -> i64 {
 
     for mut value in input.lines().map(|l| l.parse::<i64>().unwrap()) {
         for _ in 0..2000 {
-            value = prune(mix(value, value * 64));
-            value = prune(mix(value, value / 32));
-            value = prune(mix(value, value * 2048));
+            value = prune(mix(value, value << 6));
+            value = prune(mix(value, value >> 5));
+            value = prune(mix(value, value << 11));
         }
 
         sum_of_secret_numbers += value;
