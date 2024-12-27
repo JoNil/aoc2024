@@ -1,5 +1,6 @@
 #![allow(clippy::collapsible_if)]
 
+use itertools::Itertools;
 use rustc_hash::FxBuildHasher;
 
 use crate::{AdventHashMap, AdventHashSet};
@@ -316,32 +317,25 @@ pub fn b(input: &str) -> i32 {
 
     println!("{candidates:?}");
 
-    let mut fixes = AdventHashMap::<_, AdventHashSet<_>>::default();
+    let mut fixes = Vec::default();
 
     for (out, should_be, wrong) in &wrong_bits {
+        let mut fix = AdventHashSet::default();
         for &wrong in wrong {
             for gate in candidates.iter().map(|g| gates.get(g).unwrap()) {
                 if gate.out != wrong && out != wrong {
                     if !has_loop((wrong, gate.out), &wires, &gates) {
                         if test_combination((wrong, gate.out), &wires, &gates, out, *should_be) {
-                            fixes
-                                .entry(out.as_str())
-                                .or_default()
-                                .insert((wrong, gate.out));
+                            fix.insert((wrong, gate.out));
                         }
                     }
                 }
             }
         }
+        fixes.push((out.as_str(), fix));
     }
 
-    println!(
-        "{:?}",
-        fixes
-            .get("z15")
-            .unwrap()
-            .intersection(fixes.get("z25").unwrap())
-    );
+    for i in (0..fixes.len()).rev() {}
 
     1
 }
