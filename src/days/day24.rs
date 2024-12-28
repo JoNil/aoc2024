@@ -276,7 +276,6 @@ fn find_bad_gates<'a>(
     z2: u64,
 ) -> Option<Vec<(&'a str, &'a str)>> {
     if swapped_gates.len() == 4 {
-        println!("{swapped_gates:?}");
         return test_combinations(swapped_gates, wires, wires2, gates, z, z2)
             .then_some(swapped_gates.to_vec());
     }
@@ -331,6 +330,10 @@ fn find_bad_gates<'a>(
             *should_be,
             *should_be_2,
         ) {
+            if swapped_gates.is_empty() {
+                println!("{candidate:?}");
+            }
+
             let found = find_bad_gates(
                 gates,
                 wires,
