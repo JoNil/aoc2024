@@ -2,7 +2,7 @@
 
 use crate::{AdventHashMap, AdventHashSet};
 use itertools::Itertools;
-use std::mem;
+use std::{cmp::Ordering, mem};
 
 pub static INPUT: &str = include_str!("../input/24.txt");
 pub static TEST_INPUT: &str = include_str!("../input/24_test.txt");
@@ -296,8 +296,14 @@ fn find_bad_gates<'a>(
         .copied()
     {
         for other in gates_to_try_against.iter().copied() {
-            if gate != other {
-                possible_pairs.insert((gate, other));
+            match gate.cmp(other) {
+                Ordering::Less => {
+                    possible_pairs.insert((gate, other));
+                }
+                Ordering::Equal => (),
+                Ordering::Greater => {
+                    possible_pairs.insert((other, gate));
+                }
             }
         }
     }
