@@ -211,8 +211,8 @@ fn test_combination(
     bit == should_be as u8
 }
 
-fn test_combinations(
-    combinations: &[(&str, &str)],
+fn test_combinations<'a>(
+    combinations: impl IntoIterator<Item = (&'a str, &'a str)>,
     wires: &AdventHashMap<&str, u8>,
     gates: &AdventHashMap<&str, Gate>,
     z: u64,
@@ -313,22 +313,31 @@ pub fn b(input: &str) -> i32 {
         fetch_gates(&gates, gate, &mut possible_gates);
 
         if bit != should_be as u8 {
-            wrong_bits.push((name, should_be, possible_gates));
+            wrong_bits.push((name, should_be, i, possible_gates));
         } else {
-            right_bits.push((name, should_be, possible_gates));
+            right_bits.push((name, should_be, i, possible_gates));
         }
     }
 
-    let candidates = get_candidates(&right_bits, &wrong_bits);
+    for wrong_bit in &wrong_bits {
+        let name = format!("z{:02}", wrong_bit.2 - 1);
 
-    println!(
-        "{:?}",
-        wrong_bits.iter().map(|w| w.0.as_str()).collect::<Vec<_>>()
-    );
+        let all_right = right_bits
+            .iter()
+            .filter(|s| s.0 != name)
+            .flat_map(|s| s.3.iter().copied())
+            .collect::<AdventHashSet<_>>();
 
-    println!("{candidates:?}");
+        let candidates = wrong_bit
+            .3
+            .difference(&all_right)
+            .copied()
+            .collect::<AdventHashSet<_>>();
 
-    let mut fixes = Vec::default();
+        println!("{} {:?}", wrong_bit.0, candidates)
+    }
+
+    /*let mut fixes = Vec::default();
 
     for (out, should_be, wrong) in &wrong_bits {
         let mut fix = AdventHashSet::default();
@@ -401,7 +410,7 @@ pub fn b(input: &str) -> i32 {
         );
 
         let new_candidates = get_candidates(&new_right_bits, &new_wrong_bits);
-    }
+    }*/
 
     1
 }
