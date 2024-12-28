@@ -1,10 +1,8 @@
 #![allow(clippy::collapsible_if)]
 
-use itertools::Itertools;
-use rustc_hash::FxBuildHasher;
-
 use crate::{AdventHashMap, AdventHashSet};
-use std::{collections::HashMap, mem};
+use itertools::Itertools;
+use std::mem;
 
 pub static INPUT: &str = include_str!("../input/24.txt");
 pub static TEST_INPUT: &str = include_str!("../input/24_test.txt");
@@ -187,46 +185,7 @@ fn has_loop(
     let a = gates.get(&a_str).unwrap();
     let b = gates.get(&b_str).unwrap();
 
-    return find_loop(&gates, wires, a, a_str) || find_loop(&gates, wires, b, b_str);
-}
-
-fn test_combinations(
-    combinations: &[Vec<&&str>],
-    wires: &AdventHashMap<&str, u8>,
-    gates: &AdventHashMap<&str, Gate>,
-    z: u64,
-) -> bool {
-    let mut gates = gates.clone();
-
-    for combination in combinations {
-        let a = combination[0];
-        let b = combination[1];
-
-        if has_loop((a, b), wires, &gates) {
-            return false;
-        }
-
-        let [a, b] = gates.get_many_mut([*a, *b]);
-        mem::swap(a.unwrap(), b.unwrap());
-    }
-
-    for i in 0.. {
-        let name = format!("z{i:02}");
-
-        let Some(gate) = gates.get(name.as_str()) else {
-            break;
-        };
-
-        let bit = resolve_gate(&gates, &wires, gate).unwrap();
-
-        let should_be = (z >> i) & 1;
-
-        if bit != should_be as u8 {
-            return false;
-        }
-    }
-
-    true
+    find_loop(&gates, wires, a, a_str) || find_loop(&gates, wires, b, b_str)
 }
 
 fn test_combination(
@@ -250,6 +209,66 @@ fn test_combination(
     let bit = resolve_gate(&gates, &wires, gate).unwrap();
 
     bit == should_be as u8
+}
+
+fn test_combinations(
+    combinations: &[(&str, &str)],
+    wires: &AdventHashMap<&str, u8>,
+    gates: &AdventHashMap<&str, Gate>,
+    z: u64,
+) -> bool {
+    let mut gates = gates.clone();
+
+    for combination in combinations {
+        let a = combination.0;
+        let b = combination.1;
+
+        if has_loop((a, b), wires, &gates) {
+            return false;
+        }
+
+        let [a, b] = gates.get_many_mut([a, b]);
+        mem::swap(a.unwrap(), b.unwrap());
+    }
+
+    for i in 0.. {
+        let name = format!("z{i:02}");
+
+        let Some(gate) = gates.get(name.as_str()) else {
+            break;
+        };
+
+        let bit = resolve_gate(&gates, wires, gate).unwrap();
+
+        let should_be = (z >> i) & 1;
+
+        if bit != should_be as u8 {
+            return false;
+        }
+    }
+
+    true
+}
+
+fn get_candidates<'a>(
+    right_bits: &[(String, u64, AdventHashSet<&'a str>)],
+    wrong_bits: &[(String, u64, AdventHashSet<&'a str>)],
+) -> AdventHashSet<&'a str> {
+    let all_right = right_bits
+        .iter()
+        .flat_map(|s| s.2.iter().copied())
+        .collect::<AdventHashSet<_>>();
+    let all_wrong = wrong_bits
+        .iter()
+        .flat_map(|s| s.2.iter().copied())
+        .collect::<AdventHashSet<_>>();
+
+    let candidates = all_wrong
+        .difference(&all_right)
+        .copied()
+        .collect::<AdventHashSet<_>>();
+
+    candidates
 }
 
 pub fn b(input: &str) -> i32 {
@@ -279,9 +298,6 @@ pub fn b(input: &str) -> i32 {
     let mut right_bits = Vec::new();
     let mut wrong_bits = Vec::new();
 
-    let mut all_wrong = AdventHashSet::default();
-    let mut all_right = AdventHashSet::default();
-
     for i in 0.. {
         let name = format!("z{i:02}");
 
@@ -297,18 +313,13 @@ pub fn b(input: &str) -> i32 {
         fetch_gates(&gates, gate, &mut possible_gates);
 
         if bit != should_be as u8 {
-            all_wrong.extend(possible_gates.iter().copied());
             wrong_bits.push((name, should_be, possible_gates));
         } else {
-            all_right.extend(possible_gates.iter().copied());
             right_bits.push((name, should_be, possible_gates));
         }
     }
 
-    let candidates = all_wrong
-        .intersection(&all_right)
-        .copied()
-        .collect::<AdventHashSet<_>>();
+    let candidates = get_candidates(&right_bits, &wrong_bits);
 
     println!(
         "{:?}",
@@ -321,7 +332,7 @@ pub fn b(input: &str) -> i32 {
 
     for (out, should_be, wrong) in &wrong_bits {
         let mut fix = AdventHashSet::default();
-        for &wrong in wrong {
+        for wrong in wrong.iter().copied().filter(|c| candidates.contains(c)) {
             for gate in candidates.iter().map(|g| gates.get(g).unwrap()) {
                 if gate.out != wrong && out != wrong {
                     if !has_loop((wrong, gate.out), &wires, &gates) {
@@ -335,7 +346,62 @@ pub fn b(input: &str) -> i32 {
         fixes.push((out.as_str(), fix));
     }
 
-    for i in (0..fixes.len()).rev() {}
+    let mut solves_many = AdventHashSet::default();
+
+    for combinations in fixes.iter().combinations(fixes.len() - 3) {
+        let mut start = combinations[0].1.clone();
+
+        for &other in &combinations[1..] {
+            start = start
+                .intersection(&other.1)
+                .copied()
+                .collect::<AdventHashSet<_>>();
+        }
+
+        if !start.is_empty() {
+            solves_many.extend(start.iter().copied());
+        }
+    }
+
+    for &solves_many in &solves_many {
+        println!("{solves_many:?}");
+
+        let mut is_fixed = AdventHashSet::default();
+        for (out, fixed_by) in &fixes {
+            if fixed_by.contains(&solves_many) {
+                is_fixed.insert(*out);
+            }
+        }
+
+        let mut new_right_bits = right_bits.clone();
+        let mut new_wrong_bits = Vec::new();
+
+        for mut old_wrong in wrong_bits.iter().cloned() {
+            if old_wrong.2.contains(solves_many.0) {
+                old_wrong.2.remove(solves_many.0);
+                old_wrong.2.insert(solves_many.1);
+            } else {
+                old_wrong.2.insert(solves_many.0);
+                old_wrong.2.remove(solves_many.1);
+            }
+
+            if is_fixed.contains(old_wrong.0.as_str()) {
+                new_right_bits.push(old_wrong);
+            } else {
+                new_wrong_bits.push(old_wrong);
+            }
+        }
+
+        println!(
+            "{:#?}",
+            new_wrong_bits
+                .iter()
+                .map(|b| b.0.as_str())
+                .collect::<Vec<_>>()
+        );
+
+        let new_candidates = get_candidates(&new_right_bits, &new_wrong_bits);
+    }
 
     1
 }

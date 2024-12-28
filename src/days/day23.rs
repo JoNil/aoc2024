@@ -55,7 +55,7 @@ fn bron_kerbosch<'a, F>(
     }
 
     for v in p.clone() {
-        let n_v = n_fn(&v);
+        let n_v = n_fn(v);
         bron_kerbosch(
             {
                 let mut r_next = r.clone();
