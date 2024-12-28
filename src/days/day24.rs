@@ -191,9 +191,11 @@ fn has_loop(
 fn test_combination(
     combinations: &[(&str, &str)],
     wires: &AdventHashMap<&str, u8>,
+    wires2: &AdventHashMap<&str, u8>,
     gates: &AdventHashMap<&str, Gate>,
     out: &str,
     should_be: u64,
+    should_be_2: u64,
 ) -> bool {
     let mut gates = gates.clone();
 
@@ -214,15 +216,18 @@ fn test_combination(
     };
 
     let bit = resolve_gate(&gates, wires, gate).unwrap();
+    let bit2 = resolve_gate(&gates, wires2, gate).unwrap();
 
-    bit == should_be as u8
+    bit == should_be as u8 && bit2 == should_be_2 as u8
 }
 
 fn test_combinations(
     combinations: &[(&str, &str)],
     wires: &AdventHashMap<&str, u8>,
+    wires2: &AdventHashMap<&str, u8>,
     gates: &AdventHashMap<&str, Gate>,
     z: u64,
+    z2: u64,
 ) -> bool {
     let mut gates = gates.clone();
 
@@ -246,10 +251,12 @@ fn test_combinations(
         };
 
         let bit = resolve_gate(&gates, wires, gate).unwrap();
+        let bit2 = resolve_gate(&gates, wires2, gate).unwrap();
 
         let should_be = (z >> i) & 1;
+        let should_be_2 = (z2 >> i) & 1;
 
-        if bit != should_be as u8 {
+        if bit != should_be as u8 || bit2 != should_be_2 as u8 {
             return false;
         }
     }
@@ -257,19 +264,24 @@ fn test_combinations(
     true
 }
 
+#[allow(clippy::too_many_arguments)]
 fn find_bad_gates<'a>(
     gates: &AdventHashMap<&'a str, Gate<'a>>,
     wires: &AdventHashMap<&'a str, u8>,
+    wires2: &AdventHashMap<&'a str, u8>,
     gates_for_output: &AdventHashMap<i32, AdventHashSet<&'a str>>,
     swapped_gates: &[(&'a str, &'a str)],
-    outputs_to_correct: &[(String, i32, u64)],
+    outputs_to_correct: &[(String, i32, u64, u64)],
     z: u64,
+    z2: u64,
 ) -> Option<Vec<(&'a str, &'a str)>> {
     if swapped_gates.len() == 4 {
-        return test_combinations(swapped_gates, wires, gates, z).then_some(swapped_gates.to_vec());
+        println!("{swapped_gates:?}");
+        return test_combinations(swapped_gates, wires, wires2, gates, z, z2)
+            .then_some(swapped_gates.to_vec());
     }
 
-    let (output_to_correct, gate_index, should_be) = &outputs_to_correct[0];
+    let (output_to_correct, gate_index, should_be, should_be_2) = &outputs_to_correct[0];
     let last = outputs_to_correct.last().unwrap().1;
 
     let set_of_gates_to_not_touch = (0..*gate_index)
@@ -313,17 +325,21 @@ fn find_bad_gates<'a>(
         if test_combination(
             &swapped,
             wires,
+            wires2,
             gates,
             output_to_correct.as_str(),
             *should_be,
+            *should_be_2,
         ) {
             let found = find_bad_gates(
                 gates,
                 wires,
+                wires2,
                 gates_for_output,
                 &swapped,
                 &outputs_to_correct[1..],
                 z,
+                z2,
             );
 
             if found.is_some() {
@@ -344,6 +360,8 @@ pub fn b(input: &str) -> String {
         .map(|(name, signal)| (name, signal.parse::<u8>().unwrap()))
         .collect::<AdventHashMap<_, _>>();
 
+    let bit_count = wires.len() / 2;
+
     let gates = gates
         .lines()
         .map(|l| {
@@ -354,8 +372,22 @@ pub fn b(input: &str) -> String {
 
     let x = get_value("x", &wires);
     let y = get_value("y", &wires);
+    let y2 = y ^ ((1 << bit_count) - 1);
+
+    let mut wires2 = wires
+        .iter()
+        .map(|(k, v)| (*k, *v))
+        .filter(|(k, _)| k.starts_with('x'))
+        .collect::<AdventHashMap<_, _>>();
+
+    for i in 0..bit_count {
+        let name = format!("y{i:02}");
+        let value = (y2 >> i) & 1;
+        wires2.insert(wires.get_key_value(name.as_str()).unwrap().0, value as u8);
+    }
 
     let z = x + y;
+    let z2 = x + y2;
 
     let mut gates_for_output = AdventHashMap::default();
     let mut outputs_to_correct = Vec::new();
@@ -368,26 +400,30 @@ pub fn b(input: &str) -> String {
         };
 
         let bit = resolve_gate(&gates, &wires, gate).unwrap();
+        let bit2 = resolve_gate(&gates, &wires2, gate).unwrap();
 
         let should_be = (z >> i) & 1;
+        let should_be_2 = (z2 >> i) & 1;
 
         let mut possible_gates = AdventHashSet::default();
         fetch_gates(&gates, gate, &mut possible_gates);
 
         gates_for_output.insert(i, possible_gates);
 
-        if bit != should_be as u8 {
-            outputs_to_correct.push((name, i, should_be))
+        if bit != should_be as u8 || bit2 != should_be_2 as u8 {
+            outputs_to_correct.push((name, i, should_be, should_be_2))
         }
     }
 
     find_bad_gates(
         &gates,
         &wires,
+        &wires2,
         &gates_for_output,
         &[],
         &outputs_to_correct,
         z,
+        z2,
     )
     .unwrap()
     .iter()
