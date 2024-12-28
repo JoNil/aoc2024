@@ -123,6 +123,25 @@ fn fetch_gates<'a>(
     }
 }
 
+fn fetch_wires<'a>(
+    gates: &AdventHashMap<&str, Gate<'a>>,
+    wires: &AdventHashMap<&str, u8>,
+    gate: &Gate<'a>,
+    res: &mut AdventHashSet<&'a str>,
+) {
+    if wires.get(gate.in1).is_some() {
+        res.insert(gate.in1);
+    } else if let Some(gate) = gates.get(gate.in1) {
+        fetch_wires(gates, wires, gate, res);
+    }
+
+    if wires.get(gate.in2).is_some() {
+        res.insert(gate.in2);
+    } else if let Some(gate) = gates.get(gate.in2) {
+        fetch_wires(gates, wires, gate, res);
+    }
+}
+
 fn get_value(name: &str, wires: &AdventHashMap<&str, u8>) -> u64 {
     let mut num = 0;
 
@@ -266,6 +285,7 @@ fn test_combinations(
 
 #[allow(clippy::too_many_arguments)]
 fn find_bad_gates<'a>(
+    simple_gates: &AdventHashMap<&'a str, i32>,
     gates: &AdventHashMap<&'a str, Gate<'a>>,
     wires: &AdventHashMap<&'a str, u8>,
     wires2: &AdventHashMap<&'a str, u8>,
@@ -281,30 +301,28 @@ fn find_bad_gates<'a>(
     }
 
     let (output_to_correct, gate_index, should_be, should_be_2) = &outputs_to_correct[0];
-    let last = outputs_to_correct.last().unwrap().1;
 
     let set_of_gates_to_not_touch = (0..*gate_index)
         .flat_map(|i| gates_for_output.get(&i).unwrap())
         .copied()
         .collect::<AdventHashSet<_>>();
 
-    let gates_to_try_against = ((*gate_index + 1)..=last)
-        .flat_map(|i| gates_for_output.get(&i).unwrap())
-        .copied()
-        .collect::<AdventHashSet<_>>()
-        .difference(&set_of_gates_to_not_touch)
-        .copied()
-        .collect::<AdventHashSet<_>>();
-
     let mut possible_pairs = AdventHashSet::default();
 
-    for gate in gates_for_output
-        .get(gate_index)
-        .unwrap()
-        .difference(&set_of_gates_to_not_touch)
-        .copied()
-    {
-        for other in gates_to_try_against.iter().copied() {
+    for &gate in gates_for_output.get(gate_index).unwrap() {
+        for other in gates.keys().copied() {
+            if set_of_gates_to_not_touch.contains(other) {
+                continue;
+            }
+
+            if simple_gates.contains_key(other) {
+                let index = simple_gates.get(other).unwrap();
+
+                if *index != *gate_index {
+                    continue;
+                }
+            }
+
             match gate.cmp(other) {
                 Ordering::Less => {
                     possible_pairs.insert((gate, other));
@@ -330,11 +348,12 @@ fn find_bad_gates<'a>(
             *should_be,
             *should_be_2,
         ) {
-            if swapped_gates.is_empty() {
-                println!("{candidate:?}");
+            if swapped_gates.len() <= 2 {
+                println!("{swapped:?}: {}", possible_pairs.len());
             }
 
             let found = find_bad_gates(
+                simple_gates,
                 gates,
                 wires,
                 wires2,
@@ -395,6 +414,35 @@ pub fn b(input: &str) -> String {
     let mut gates_for_output = AdventHashMap::default();
     let mut outputs_to_correct = Vec::new();
 
+    let gate_wires = gates
+        .iter()
+        .map(|(name, gate)| {
+            let mut gate_wires = AdventHashSet::default();
+            fetch_wires(&gates, &wires, gate, &mut gate_wires);
+            (*name, gate_wires)
+        })
+        .collect::<AdventHashMap<_, _>>();
+
+    let mut simple_gates = AdventHashMap::default();
+
+    for (gate, wires) in gate_wires {
+        if wires.len() == 2 {
+            simple_gates.insert(
+                gate,
+                wires
+                    .iter()
+                    .next()
+                    .unwrap()
+                    .trim_start_matches('x')
+                    .trim_start_matches('y')
+                    .parse::<i32>()
+                    .unwrap(),
+            );
+        }
+    }
+
+    println!("{simple_gates:#?}");
+
     for i in 0.. {
         let name = format!("z{i:02}");
 
@@ -419,6 +467,7 @@ pub fn b(input: &str) -> String {
     }
 
     find_bad_gates(
+        &simple_gates,
         &gates,
         &wires,
         &wires2,
