@@ -269,8 +269,6 @@ fn find_bad_gates<'a>(
         return test_combinations(swapped_gates, wires, gates, z).then_some(swapped_gates.to_vec());
     }
 
-    println!("{:?} {:?}", swapped_gates, outputs_to_correct);
-
     let (output_to_correct, gate_index, should_be) = &outputs_to_correct[0];
     let last = outputs_to_correct.last().unwrap().1;
 
