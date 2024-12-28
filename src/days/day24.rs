@@ -2,7 +2,7 @@
 
 use crate::{AdventHashMap, AdventHashSet};
 use itertools::Itertools;
-use std::mem;
+use std::{mem, num::NonZeroUsize};
 
 pub static INPUT: &str = include_str!("../input/24.txt");
 pub static TEST_INPUT: &str = include_str!("../input/24_test.txt");
@@ -189,7 +189,7 @@ fn has_loop(
 }
 
 fn test_combination(
-    (a_str, b_str): (&str, &str),
+    combinations: &[(&str, &str)],
     wires: &AdventHashMap<&str, u8>,
     gates: &AdventHashMap<&str, Gate>,
     out: &str,
@@ -197,8 +197,15 @@ fn test_combination(
 ) -> bool {
     let mut gates = gates.clone();
 
-    {
-        let [a, b] = gates.get_many_mut([a_str, b_str]);
+    for combination in combinations {
+        let a = combination.0;
+        let b = combination.1;
+
+        if has_loop((a, b), wires, &gates) {
+            return false;
+        }
+
+        let [a, b] = gates.get_many_mut([a, b]);
         mem::swap(a.unwrap(), b.unwrap());
     }
 
@@ -206,13 +213,13 @@ fn test_combination(
         panic!("Could not find");
     };
 
-    let bit = resolve_gate(&gates, &wires, gate).unwrap();
+    let bit = resolve_gate(&gates, wires, gate).unwrap();
 
     bit == should_be as u8
 }
 
 fn test_combinations<'a>(
-    combinations: impl IntoIterator<Item = (&'a str, &'a str)>,
+    combinations: &[(&str, &str)],
     wires: &AdventHashMap<&str, u8>,
     gates: &AdventHashMap<&str, Gate>,
     z: u64,
@@ -250,28 +257,81 @@ fn test_combinations<'a>(
     true
 }
 
-fn get_candidates<'a>(
-    right_bits: &[(String, u64, AdventHashSet<&'a str>)],
-    wrong_bits: &[(String, u64, AdventHashSet<&'a str>)],
-) -> AdventHashSet<&'a str> {
-    let all_right = right_bits
-        .iter()
-        .flat_map(|s| s.2.iter().copied())
-        .collect::<AdventHashSet<_>>();
-    let all_wrong = wrong_bits
-        .iter()
-        .flat_map(|s| s.2.iter().copied())
-        .collect::<AdventHashSet<_>>();
+fn find_bad_gates<'a>(
+    gates: &AdventHashMap<&'a str, Gate<'a>>,
+    wires: &AdventHashMap<&'a str, u8>,
+    gates_for_output: &AdventHashMap<i32, AdventHashSet<&'a str>>,
+    swapped_gates: &[(&'a str, &'a str)],
+    outputs_to_correct: &[(String, i32, u64)],
+    z: u64,
+) -> Option<Vec<(&'a str, &'a str)>> {
+    if swapped_gates.len() == 4 {
+        return test_combinations(swapped_gates, wires, gates, z).then_some(swapped_gates.to_vec());
+    }
 
-    let candidates = all_wrong
-        .difference(&all_right)
+    println!("{:?} {:?}", swapped_gates, outputs_to_correct);
+
+    let (output_to_correct, gate_index, should_be) = &outputs_to_correct[0];
+    let last = outputs_to_correct.last().unwrap().1;
+
+    let set_of_gates_to_not_touch = (0..*gate_index)
+        .flat_map(|i| gates_for_output.get(&i).unwrap())
         .copied()
         .collect::<AdventHashSet<_>>();
 
-    candidates
+    let gates_to_try_against = ((*gate_index + 1)..=last)
+        .flat_map(|i| gates_for_output.get(&i).unwrap())
+        .copied()
+        .collect::<AdventHashSet<_>>()
+        .difference(&set_of_gates_to_not_touch)
+        .copied()
+        .collect::<AdventHashSet<_>>();
+
+    let mut possible_pairs = AdventHashSet::default();
+
+    for gate in gates_for_output
+        .get(gate_index)
+        .unwrap()
+        .difference(&set_of_gates_to_not_touch)
+        .copied()
+    {
+        for other in gates_to_try_against.iter().copied() {
+            if gate != other {
+                possible_pairs.insert((gate, other));
+            }
+        }
+    }
+
+    for candidate in &possible_pairs {
+        let mut swapped = swapped_gates.to_vec();
+        swapped.push(*candidate);
+
+        if test_combination(
+            &swapped,
+            wires,
+            gates,
+            output_to_correct.as_str(),
+            *should_be,
+        ) {
+            let found = find_bad_gates(
+                gates,
+                wires,
+                gates_for_output,
+                &swapped,
+                &outputs_to_correct[1..],
+                z,
+            );
+
+            if found.is_some() {
+                return found;
+            }
+        }
+    }
+
+    None
 }
 
-pub fn b(input: &str) -> i32 {
+pub fn b(input: &str) -> String {
     let (wires, gates) = input.split_once("\n\n").unwrap();
 
     let wires = wires
@@ -293,10 +353,8 @@ pub fn b(input: &str) -> i32 {
 
     let z = x + y;
 
-    println!("{x} + {y} = {z}");
-
-    let mut right_bits = Vec::new();
-    let mut wrong_bits = Vec::new();
+    let mut gates_for_output = AdventHashMap::default();
+    let mut outputs_to_correct = Vec::new();
 
     for i in 0.. {
         let name = format!("z{i:02}");
@@ -312,110 +370,30 @@ pub fn b(input: &str) -> i32 {
         let mut possible_gates = AdventHashSet::default();
         fetch_gates(&gates, gate, &mut possible_gates);
 
+        gates_for_output.insert(i, possible_gates);
+
         if bit != should_be as u8 {
-            wrong_bits.push((name, should_be, i, possible_gates));
-        } else {
-            right_bits.push((name, should_be, i, possible_gates));
+            outputs_to_correct.push((name, i, should_be))
         }
     }
 
-    for wrong_bit in &wrong_bits {
-        let name = format!("z{:02}", wrong_bit.2 - 1);
-
-        let all_right = right_bits
-            .iter()
-            .filter(|s| s.0 != name)
-            .flat_map(|s| s.3.iter().copied())
-            .collect::<AdventHashSet<_>>();
-
-        let candidates = wrong_bit
-            .3
-            .difference(&all_right)
-            .copied()
-            .collect::<AdventHashSet<_>>();
-
-        println!("{} {:?}", wrong_bit.0, candidates)
-    }
-
-    /*let mut fixes = Vec::default();
-
-    for (out, should_be, wrong) in &wrong_bits {
-        let mut fix = AdventHashSet::default();
-        for wrong in wrong.iter().copied().filter(|c| candidates.contains(c)) {
-            for gate in candidates.iter().map(|g| gates.get(g).unwrap()) {
-                if gate.out != wrong && out != wrong {
-                    if !has_loop((wrong, gate.out), &wires, &gates) {
-                        if test_combination((wrong, gate.out), &wires, &gates, out, *should_be) {
-                            fix.insert((wrong, gate.out));
-                        }
-                    }
-                }
-            }
-        }
-        fixes.push((out.as_str(), fix));
-    }
-
-    let mut solves_many = AdventHashSet::default();
-
-    for combinations in fixes.iter().combinations(fixes.len() - 3) {
-        let mut start = combinations[0].1.clone();
-
-        for &other in &combinations[1..] {
-            start = start
-                .intersection(&other.1)
-                .copied()
-                .collect::<AdventHashSet<_>>();
-        }
-
-        if !start.is_empty() {
-            solves_many.extend(start.iter().copied());
-        }
-    }
-
-    for &solves_many in &solves_many {
-        println!("{solves_many:?}");
-
-        let mut is_fixed = AdventHashSet::default();
-        for (out, fixed_by) in &fixes {
-            if fixed_by.contains(&solves_many) {
-                is_fixed.insert(*out);
-            }
-        }
-
-        let mut new_right_bits = right_bits.clone();
-        let mut new_wrong_bits = Vec::new();
-
-        for mut old_wrong in wrong_bits.iter().cloned() {
-            if old_wrong.2.contains(solves_many.0) {
-                old_wrong.2.remove(solves_many.0);
-                old_wrong.2.insert(solves_many.1);
-            } else {
-                old_wrong.2.insert(solves_many.0);
-                old_wrong.2.remove(solves_many.1);
-            }
-
-            if is_fixed.contains(old_wrong.0.as_str()) {
-                new_right_bits.push(old_wrong);
-            } else {
-                new_wrong_bits.push(old_wrong);
-            }
-        }
-
-        println!(
-            "{:#?}",
-            new_wrong_bits
-                .iter()
-                .map(|b| b.0.as_str())
-                .collect::<Vec<_>>()
-        );
-
-        let new_candidates = get_candidates(&new_right_bits, &new_wrong_bits);
-    }*/
-
-    1
+    find_bad_gates(
+        &gates,
+        &wires,
+        &gates_for_output,
+        &[],
+        &outputs_to_correct,
+        z,
+    )
+    .unwrap()
+    .iter()
+    .copied()
+    .flat_map(|p| vec![p.0, p.1])
+    .sorted()
+    .join(",")
 }
 
 #[test]
 fn test_b() {
-    assert_eq!(b(INPUT), 0);
+    assert_eq!(b(INPUT), "");
 }
