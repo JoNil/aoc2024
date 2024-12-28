@@ -218,7 +218,7 @@ fn test_combination(
     bit == should_be as u8
 }
 
-fn test_combinations<'a>(
+fn test_combinations(
     combinations: &[(&str, &str)],
     wires: &AdventHashMap<&str, u8>,
     gates: &AdventHashMap<&str, Gate>,
