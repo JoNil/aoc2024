@@ -2,7 +2,7 @@
 
 use crate::{AdventHashMap, AdventHashSet};
 use itertools::Itertools;
-use std::{mem, num::NonZeroUsize};
+use std::mem;
 
 pub static INPUT: &str = include_str!("../input/24.txt");
 pub static TEST_INPUT: &str = include_str!("../input/24_test.txt");
