@@ -2,7 +2,7 @@
 
 use crate::{AdventHashMap, AdventHashSet};
 use itertools::Itertools;
-use std::{cmp::Ordering, mem};
+use std::{cmp::Ordering, mem, ops::RangeInclusive};
 
 pub static INPUT: &str = include_str!("../input/24.txt");
 pub static TEST_INPUT: &str = include_str!("../input/24_test.txt");
@@ -285,7 +285,7 @@ fn test_combinations(
 
 #[allow(clippy::too_many_arguments)]
 fn find_bad_gates<'a>(
-    simple_gates: &AdventHashMap<&'a str, i32>,
+    could_affect_output_upto: &AdventHashMap<&'a str, RangeInclusive<i32>>,
     gates: &AdventHashMap<&'a str, Gate<'a>>,
     wires: &AdventHashMap<&'a str, u8>,
     wires2: &AdventHashMap<&'a str, u8>,
@@ -300,27 +300,26 @@ fn find_bad_gates<'a>(
             .then_some(swapped_gates.to_vec());
     }
 
-    let (output_to_correct, gate_index, should_be, should_be_2) = &outputs_to_correct[0];
+    if outputs_to_correct.is_empty() {
+        return None;
+    }
 
-    let set_of_gates_to_not_touch = (0..*gate_index)
-        .flat_map(|i| gates_for_output.get(&i).unwrap())
-        .copied()
-        .collect::<AdventHashSet<_>>();
+    let (output_to_correct, gate_index, should_be, should_be_2) = &outputs_to_correct[0];
 
     let mut possible_pairs = AdventHashSet::default();
 
     for &gate in gates_for_output.get(gate_index).unwrap() {
         for other in gates.keys().copied() {
-            if set_of_gates_to_not_touch.contains(other) {
-                continue;
-            }
+            if could_affect_output_upto.contains_key(other) {
+                let range = could_affect_output_upto.get(other).unwrap();
 
-            if simple_gates.contains_key(other) {
-                let index = simple_gates.get(other).unwrap();
-
-                if *index != *gate_index {
+                if !range.contains(gate_index) {
                     continue;
                 }
+            }
+
+            if other.starts_with('z') && gate.starts_with('z') {
+                continue;
             }
 
             match gate.cmp(other) {
@@ -353,7 +352,7 @@ fn find_bad_gates<'a>(
             }
 
             let found = find_bad_gates(
-                simple_gates,
+                could_affect_output_upto,
                 gates,
                 wires,
                 wires2,
@@ -370,7 +369,17 @@ fn find_bad_gates<'a>(
         }
     }
 
-    None
+    find_bad_gates(
+        could_affect_output_upto,
+        gates,
+        wires,
+        wires2,
+        gates_for_output,
+        swapped_gates,
+        &outputs_to_correct[1..],
+        z,
+        z2,
+    )
 }
 
 pub fn b(input: &str) -> String {
@@ -382,8 +391,6 @@ pub fn b(input: &str) -> String {
         .map(|(name, signal)| (name, signal.parse::<u8>().unwrap()))
         .collect::<AdventHashMap<_, _>>();
 
-    let bit_count = wires.len() / 2;
-
     let gates = gates
         .lines()
         .map(|l| {
@@ -392,9 +399,21 @@ pub fn b(input: &str) -> String {
         })
         .collect::<AdventHashMap<_, _>>();
 
+    let mut input_count = (wires.len() / 2) as i32;
+    let mut output_count = 0;
+
+    for i in 0.. {
+        let gate_name = format!("z{i:02}");
+
+        if !gates.contains_key(gate_name.as_str()) {
+            output_count = i;
+            break;
+        };
+    }
+
     let x = get_value("x", &wires);
     let y = get_value("y", &wires);
-    let y2 = y ^ ((1 << bit_count) - 1);
+    let y2 = y ^ ((1 << output_count) - 1);
 
     let mut wires2 = wires
         .iter()
@@ -402,7 +421,7 @@ pub fn b(input: &str) -> String {
         .filter(|(k, _)| k.starts_with('x'))
         .collect::<AdventHashMap<_, _>>();
 
-    for i in 0..bit_count {
+    for i in 0..input_count {
         let name = format!("y{i:02}");
         let value = (y2 >> i) & 1;
         wires2.insert(wires.get_key_value(name.as_str()).unwrap().0, value as u8);
@@ -410,9 +429,6 @@ pub fn b(input: &str) -> String {
 
     let z = x + y;
     let z2 = x + y2;
-
-    let mut gates_for_output = AdventHashMap::default();
-    let mut outputs_to_correct = Vec::new();
 
     let gate_wires = gates
         .iter()
@@ -423,25 +439,90 @@ pub fn b(input: &str) -> String {
         })
         .collect::<AdventHashMap<_, _>>();
 
-    let mut simple_gates = AdventHashMap::default();
+    let could_affect_output_upto = gate_wires
+        .iter()
+        .map(|(k, v)| {
+            let range = v
+                .iter()
+                .copied()
+                .filter(|v| v.starts_with('x') || v.starts_with('y'))
+                .map(|i| {
+                    i.trim_start_matches('x')
+                        .trim_start_matches('y')
+                        .parse::<i32>()
+                        .unwrap()
+                })
+                .minmax()
+                .into_option()
+                .unwrap();
 
-    for (gate, wires) in gate_wires {
-        if wires.len() == 2 {
-            simple_gates.insert(
-                gate,
-                wires
-                    .iter()
-                    .next()
-                    .unwrap()
-                    .trim_start_matches('x')
-                    .trim_start_matches('y')
-                    .parse::<i32>()
-                    .unwrap(),
-            );
+            (*k, range.0..=range.1)
+        })
+        .collect::<AdventHashMap<_, _>>();
+
+    println!("{could_affect_output_upto:#?}");
+
+    let mut outputs_is_missing = AdventHashMap::<i32, AdventHashSet<&str>>::default();
+    let mut outputs_has_out_of_range = AdventHashMap::<i32, AdventHashSet<&str>>::default();
+
+    for i in 0.. {
+        let gate_name = format!("z{i:02}");
+
+        let Some(gate_wires) = gate_wires.get(gate_name.as_str()) else {
+            break;
+        };
+
+        for in_i in 0..=i.min(input_count - 1) {
+            let in1_name = format!("x{in_i:02}");
+            let in2_name = format!("y{in_i:02}");
+
+            if !gate_wires.contains(in1_name.as_str()) {
+                outputs_is_missing
+                    .entry(i)
+                    .or_default()
+                    .insert(wires.get_key_value(in1_name.as_str()).unwrap().0);
+            }
+
+            if !gate_wires.contains(in2_name.as_str()) {
+                outputs_is_missing
+                    .entry(i)
+                    .or_default()
+                    .insert(wires.get_key_value(in2_name.as_str()).unwrap().0);
+            }
+        }
+
+        for in_i in (i + 1)..input_count {
+            let in1_name = format!("x{in_i:02}");
+            let in2_name = format!("y{in_i:02}");
+
+            if gate_wires.contains(in1_name.as_str()) {
+                outputs_has_out_of_range
+                    .entry(i)
+                    .or_default()
+                    .insert(wires.get_key_value(in1_name.as_str()).unwrap().0);
+            }
+
+            if gate_wires.contains(in2_name.as_str()) {
+                outputs_has_out_of_range
+                    .entry(i)
+                    .or_default()
+                    .insert(wires.get_key_value(in2_name.as_str()).unwrap().0);
+            }
         }
     }
 
-    println!("{simple_gates:#?}");
+    for (oim, ins) in &outputs_is_missing {
+        let ins = ins.iter().copied().sorted().collect::<Vec<_>>();
+        println!("{:?}", ins);
+    }
+
+    println!("OIM {outputs_is_missing:#?}");
+    println!("OOR {outputs_has_out_of_range:#?}");
+
+    panic!();
+
+    let mut gates_for_output = AdventHashMap::default();
+    let mut outputs_to_correct = Vec::new();
 
     for i in 0.. {
         let name = format!("z{i:02}");
@@ -461,13 +542,18 @@ pub fn b(input: &str) -> String {
 
         gates_for_output.insert(i, possible_gates);
 
-        if bit != should_be as u8 || bit2 != should_be_2 as u8 {
+        if bit != should_be as u8 || bit2 != should_be_2 as u8
+        /*|| outputs_is_missing.contains_key(&i)
+        || outputs_has_out_of_range.contains_key(&i)*/
+        {
             outputs_to_correct.push((name, i, should_be, should_be_2))
         }
     }
 
-    find_bad_gates(
-        &simple_gates,
+    outputs_to_correct.reverse();
+
+    if let Some(res) = find_bad_gates(
+        &could_affect_output_upto,
         &gates,
         &wires,
         &wires2,
@@ -476,13 +562,15 @@ pub fn b(input: &str) -> String {
         &outputs_to_correct,
         z,
         z2,
-    )
-    .unwrap()
-    .iter()
-    .copied()
-    .flat_map(|p| vec![p.0, p.1])
-    .sorted()
-    .join(",")
+    ) {
+        res.iter()
+            .copied()
+            .flat_map(|p| vec![p.0, p.1])
+            .sorted()
+            .join(",")
+    } else {
+        panic!("Did not find answer");
+    }
 }
 
 #[test]
