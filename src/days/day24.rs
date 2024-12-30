@@ -399,7 +399,7 @@ pub fn b(input: &str) -> String {
         })
         .collect::<AdventHashMap<_, _>>();
 
-    let mut input_count = (wires.len() / 2) as i32;
+    let input_count = (wires.len() / 2) as i32;
     let mut output_count = 0;
 
     for i in 0.. {
@@ -462,65 +462,6 @@ pub fn b(input: &str) -> String {
 
     println!("{could_affect_output_upto:#?}");
 
-    let mut outputs_is_missing = AdventHashMap::<i32, AdventHashSet<&str>>::default();
-    let mut outputs_has_out_of_range = AdventHashMap::<i32, AdventHashSet<&str>>::default();
-
-    for i in 0.. {
-        let gate_name = format!("z{i:02}");
-
-        let Some(gate_wires) = gate_wires.get(gate_name.as_str()) else {
-            break;
-        };
-
-        for in_i in 0..=i.min(input_count - 1) {
-            let in1_name = format!("x{in_i:02}");
-            let in2_name = format!("y{in_i:02}");
-
-            if !gate_wires.contains(in1_name.as_str()) {
-                outputs_is_missing
-                    .entry(i)
-                    .or_default()
-                    .insert(wires.get_key_value(in1_name.as_str()).unwrap().0);
-            }
-
-            if !gate_wires.contains(in2_name.as_str()) {
-                outputs_is_missing
-                    .entry(i)
-                    .or_default()
-                    .insert(wires.get_key_value(in2_name.as_str()).unwrap().0);
-            }
-        }
-
-        for in_i in (i + 1)..input_count {
-            let in1_name = format!("x{in_i:02}");
-            let in2_name = format!("y{in_i:02}");
-
-            if gate_wires.contains(in1_name.as_str()) {
-                outputs_has_out_of_range
-                    .entry(i)
-                    .or_default()
-                    .insert(wires.get_key_value(in1_name.as_str()).unwrap().0);
-            }
-
-            if gate_wires.contains(in2_name.as_str()) {
-                outputs_has_out_of_range
-                    .entry(i)
-                    .or_default()
-                    .insert(wires.get_key_value(in2_name.as_str()).unwrap().0);
-            }
-        }
-    }
-
-    for (oim, ins) in &outputs_is_missing {
-        let ins = ins.iter().copied().sorted().collect::<Vec<_>>();
-        println!("{:?}", ins);
-    }
-
-    println!("OIM {outputs_is_missing:#?}");
-    println!("OOR {outputs_has_out_of_range:#?}");
-
-    panic!();
-
     let mut gates_for_output = AdventHashMap::default();
     let mut outputs_to_correct = Vec::new();
 
@@ -542,10 +483,7 @@ pub fn b(input: &str) -> String {
 
         gates_for_output.insert(i, possible_gates);
 
-        if bit != should_be as u8 || bit2 != should_be_2 as u8
-        /*|| outputs_is_missing.contains_key(&i)
-        || outputs_has_out_of_range.contains_key(&i)*/
-        {
+        if bit != should_be as u8 || bit2 != should_be_2 as u8 {
             outputs_to_correct.push((name, i, should_be, should_be_2))
         }
     }
